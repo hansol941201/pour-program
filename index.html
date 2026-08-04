@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POUR 업무 시스템</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="#dashboard" class="brand">POUR</a>
+
+  <div class="search-wrap">
+    <input type="text" id="global-search" class="search-input" placeholder="통합검색  (업무, 문구, 아이디, 링크 검색)" autocomplete="off">
+    <div id="search-results" class="search-results hidden"></div>
+  </div>
+
+  <div class="clock" id="clock"></div>
+</header>
+
+<nav class="quicknav" id="quicknav">
+  <!-- rendered by js/app.js from MENU_ITEMS -->
+</nav>
+
+<main id="main">
+  <!-- dashboard / section content rendered by js/app.js -->
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
