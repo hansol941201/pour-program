@@ -95,7 +95,11 @@
     margin-top:auto;padding-top:20px;border-top:1px solid var(--sb-border);
     display:flex;flex-direction:column;gap:8px;
   }
-  .sidebar-footer-title{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--sb-text-sub);}
+  .sidebar-footer-link{
+    background:none;border:none;padding:0;text-align:left;cursor:pointer;
+    font-size:12.5px;font-weight:700;color:var(--sb-text-sub);
+  }
+  .sidebar-footer-link:hover, .sidebar-footer-link.active{color:var(--sb-navy);}
 
   /* AI 업무비서: 사이드바 맨 아래 메모장 스타일 입력창 */
   .ai-note-composer{
@@ -490,7 +494,7 @@
     </div>
 
     <div class="sidebar-footer">
-      <span class="sidebar-footer-title">나만의 매뉴얼</span>
+      <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체 관리</button>
     </div>
 
     <div class="ai-note-composer">
@@ -602,8 +606,6 @@ const DEFAULT_STATE = {
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
-    {id:'nav-phrases', kind:'phrases'},
-    {id:'nav-companies', kind:'companies'},
     {id:'nav-manual', kind:'manual'}
   ],
   currentView:{type:'guide', id:'g1'}
@@ -865,7 +867,10 @@ function syncNavOrder(){
     }
   });
   state.navOrder = state.navOrder.filter(e => e.kind !== 'guide' || state.guides.some(g => g.id === e.guideId));
-  ['phrases','companies','manual'].forEach(kind => {
+  // '자주 쓰는 멘트'와 '업체 관리'는 목록에서 제외 (기능/데이터는 유지, 업체 관리는
+  // 사이드바 하단으로 이동, 멘트는 통합 검색으로 계속 찾을 수 있음)
+  state.navOrder = state.navOrder.filter(e => e.kind !== 'phrases' && e.kind !== 'companies');
+  ['manual'].forEach(kind => {
     if(!state.navOrder.some(e => e.kind === kind)){
       state.navOrder.push({id:`nav-${kind}`, kind});
     }
@@ -899,7 +904,13 @@ function renderSidebar(){
       <span class="label">${escapeHtml(item.label)}</span>
     </li>
   `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">항목이 없습니다</li>';
+
+  document.getElementById('companiesFooterLink').classList.toggle('active', state.currentView.type === 'companies');
 }
+document.getElementById('companiesFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'companies'};
+  saveState(); render();
+});
 
 const unifiedNavListEl = document.getElementById('unifiedNavList');
 unifiedNavListEl.addEventListener('click', (e)=>{
