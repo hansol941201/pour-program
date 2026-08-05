@@ -96,7 +96,12 @@
     margin-top:16px;padding-top:16px;border-top:1px solid var(--sidebar-border);
     display:flex;flex-direction:column;gap:8px;
   }
+  .ai-note-head{display:flex;align-items:center;justify-content:space-between;}
   .ai-note-label{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text-light-gray);}
+  .ai-note-settings-btn{
+    background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:13px;padding:2px 4px;line-height:1;
+  }
+  .ai-note-settings-btn:hover{color:#fff;}
   .ai-note-textarea{
     width:100%;min-height:88px;resize:vertical;border-radius:8px;border:1px solid var(--sidebar-border);
     background:var(--sidebar-bg-active);color:#fff;font-size:13px;font-family:inherit;padding:9px 10px;
@@ -415,7 +420,10 @@
     </div>
 
     <div class="ai-note-composer">
-      <div class="ai-note-label">✨ AI 업무비서</div>
+      <div class="ai-note-head">
+        <div class="ai-note-label">✨ AI 업무비서</div>
+        <button type="button" class="ai-note-settings-btn" id="aiSettingsBtn" title="API 키 설정">⚙️</button>
+      </div>
       <textarea id="aiNoteInput" class="ai-note-textarea" rows="4"
         placeholder="예: 메일 실적 보내요 / 카카오톡 협약 감사합니다 / 전화보고 동신도장 전화옴"></textarea>
       <button type="button" class="ai-note-btn" id="aiRewriteBtn">✨ AI 문구 수정</button>
@@ -1148,17 +1156,38 @@ function getOpenAIKey(){
   return localStorage.getItem(OPENAI_KEY_STORAGE) || '';
 }
 function promptForOpenAIKey(onSaved){
+  // 최초 1회만 호출됨: 여기서 저장한 키는 이후 자동으로 재사용되고, 다시 묻지 않는다.
   openModal({
-    title:'OpenAI API 키 등록',
+    title:'OpenAI API 키 등록 (최초 1회)',
     submitLabel:'저장',
     fields:[{name:'key', label:'OpenAI API Key', placeholder:'sk-...'}],
     onSubmit(data){
       if(!data.key) return;
       localStorage.setItem(OPENAI_KEY_STORAGE, data.key);
+      showToast('API 키가 저장되었습니다. 이후에는 자동으로 사용됩니다');
       onSaved(data.key);
     }
   });
 }
+function openAiSettingsModal(){
+  // API 키를 변경/삭제할 수 있는 유일한 경로. 필드를 비운 채 저장하면 키가 삭제된다.
+  const current = getOpenAIKey();
+  openModal({
+    title:'⚙️ AI 업무비서 설정',
+    submitLabel:'저장',
+    fields:[{name:'key', label:'OpenAI API Key (비우고 저장하면 삭제됩니다)', value: current, placeholder:'sk-...'}],
+    onSubmit(data){
+      if(data.key){
+        localStorage.setItem(OPENAI_KEY_STORAGE, data.key);
+        showToast('API 키가 저장되었습니다');
+      } else {
+        localStorage.removeItem(OPENAI_KEY_STORAGE);
+        showToast('API 키가 삭제되었습니다');
+      }
+    }
+  });
+}
+document.getElementById('aiSettingsBtn').addEventListener('click', openAiSettingsModal);
 
 function detectNoteType(text){
   const t = text.trim();
