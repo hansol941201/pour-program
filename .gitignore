@@ -1,3 +1,7 @@
 # Firebase 연동 설정 (API Key 등 프로젝트별 값 포함) — 저장소에 커밋하지 않는다.
 # firebaseConfig.example.js 를 복사해서 firebaseConfig.js 로 만들고 값을 채워 넣으세요.
 firebaseConfig.js
+
+# 이 프로젝트는 빌드 단계가 없는 정적 사이트입니다. node_modules는 브라우저에서
+# 직접 쓰이지 않으므로(Firebase는 CDN ESM으로 로드) 저장소에 포함하지 않습니다.
+node_modules/
