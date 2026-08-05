@@ -200,6 +200,35 @@
   .card-title{font-size:17px;font-weight:700;margin:0 0 12px;}
   .card-body{white-space:pre-wrap;font-size:14px;line-height:1.7;color:#2b3648;}
   .card-actions{display:flex;gap:6px;flex-shrink:0;}
+
+  /* 업체 관리: 연락처 정보 + 메모 */
+  .company-info-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;padding:14px 0;
+    border-top:1px solid var(--card-border);border-bottom:1px solid var(--card-border);margin-bottom:16px;
+  }
+  .company-info-item{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .company-info-item.company-info-wide{grid-column:1 / -1;}
+  .company-info-label{font-size:11px;font-weight:700;color:var(--text-gray);letter-spacing:.03em;}
+  .company-info-val{font-size:13.5px;color:var(--text-dark);word-break:break-all;}
+  .company-memo-label{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
+  .company-memo-textarea{
+    width:100%;min-height:110px;padding:10px 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:13.5px;font-family:inherit;line-height:1.6;resize:vertical;color:var(--text-dark);
+  }
+  .company-memo-textarea:focus{outline:none;border-color:var(--accent);}
+
+  /* 명함 스캔 모달 */
+  .card-scan-modal{max-width:440px;}
+  .card-scan-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .card-scan-head h2{margin:0;font-size:16px;}
+  .card-scan-drop{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
+    border:2px dashed var(--card-border);border-radius:12px;padding:36px 20px;cursor:pointer;
+    background:#f8f9fb;color:var(--text-gray);font-size:13.5px;
+  }
+  .card-scan-drop:hover, .card-scan-drop.drag{border-color:var(--navy);background:var(--navy-soft);color:var(--navy);}
+  .card-scan-hint{font-size:11.5px;color:var(--text-light-gray);}
+  .card-scan-progress{margin-top:14px;font-size:13px;color:var(--text-gray);text-align:center;}
   .copy-btn{
     background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;
     padding:6px 12px;font-size:12px;font-weight:600;color:var(--text-gray);cursor:pointer;
@@ -527,23 +556,30 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="cardScanOverlay">
+  <div class="modal card-scan-modal">
+    <div class="card-scan-head">
+      <h2>📷 명함 스캔</h2>
+      <button class="icon-btn" id="cardScanClose" title="닫기">✕</button>
+    </div>
+    <label class="card-scan-drop" id="cardScanDrop" for="cardScanFileInput">
+      <div>이미지를 드래그하거나 클릭해서 선택하세요</div>
+      <div class="card-scan-hint">명함 이미지는 저장되지 않고, 인식된 정보만 저장됩니다</div>
+    </label>
+    <input type="file" id="cardScanFileInput" accept="image/*" hidden />
+    <div class="card-scan-progress" id="cardScanProgress" style="display:none;"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
+<!-- 명함 스캔(OCR) 전용: 브라우저에서 직접 텍스트를 인식하기 위한 라이브러리. 명함 이미지 자체는 서버로 전송되지 않고 인식 후 즉시 폐기됩니다. -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
 <script>
 /* ---------- State ---------- */
 const STORAGE_KEY = 'work-guide-state-v1';
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
-
-/* 업체 관리: 신규 업체 등록 시 자동 생성되는 기본 체크리스트 */
-const DEFAULT_CHECKLIST_LABELS = [
-  '명함','로고','1차 메일 발송','1차 메일 회신 확인 전화','사업자등록증','질문서','계정 생성',
-  '협약서','샘플 발송','현장등록','공법설명회','PT','CAD','컨설팅','공고문 확인','입찰','계약',
-  '공사 시작','완료'
-];
-function createChecklist(){
-  return DEFAULT_CHECKLIST_LABELS.map(label => ({id:uid(), label, done:false}));
-}
 
 const DEFAULT_STATE = {
   brand: { title: 'MY WORK' },
@@ -583,7 +619,7 @@ const DEFAULT_STATE = {
     {id:uid(), site:'예시 사이트', username:'my_id', password:'my_password'}
   ],
   companies:[
-    {id:uid(), name:'예시 업체', checklist:createChecklist()}
+    {id:uid(), name:'예시 업체', contactName:'', phone:'', fax:'', email:'', address:'', memo:''}
   ],
   currentView:{type:'guide', id:'g1'}
 };
@@ -701,6 +737,104 @@ phoneNoteTextarea.addEventListener('input', (e)=>{
   const step = guide && guide.steps.find(s=>s.id===currentPhoneNote.stepId);
   if(step){ step.phoneNote = e.target.value; saveState(); }
 });
+
+/* ---------- 명함 스캔(OCR): 이미지는 저장하지 않고 인식 결과만 업체 등록 폼에 채워넣는다 ---------- */
+const cardScanOverlay = document.getElementById('cardScanOverlay');
+const cardScanDrop = document.getElementById('cardScanDrop');
+const cardScanFileInput = document.getElementById('cardScanFileInput');
+const cardScanProgress = document.getElementById('cardScanProgress');
+
+function openCardScan(){
+  cardScanOverlay.classList.add('open');
+  cardScanProgress.style.display = 'none';
+  cardScanProgress.textContent = '';
+  cardScanFileInput.value = '';
+}
+function closeCardScan(){ cardScanOverlay.classList.remove('open'); }
+document.getElementById('cardScanClose').addEventListener('click', closeCardScan);
+cardScanOverlay.addEventListener('click', (e)=>{ if(e.target.id === 'cardScanOverlay') closeCardScan(); });
+
+cardScanFileInput.addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(file) handleCardImage(file);
+});
+cardScanDrop.addEventListener('click', (e)=>{ e.preventDefault(); cardScanFileInput.click(); });
+cardScanDrop.addEventListener('dragover', (e)=>{ e.preventDefault(); cardScanDrop.classList.add('drag'); });
+cardScanDrop.addEventListener('dragleave', ()=>{ cardScanDrop.classList.remove('drag'); });
+cardScanDrop.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  cardScanDrop.classList.remove('drag');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(file) handleCardImage(file);
+});
+
+/* 명함 원본 텍스트에서 시공사명/담당자/전화/팩스/이메일/주소를 추정 추출 (휴리스틱, 이미지 자체는 저장하지 않음) */
+function parseBusinessCardText(rawText){
+  const lines = String(rawText || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const result = { name:'', contactName:'', phone:'', fax:'', email:'', address:'' };
+
+  const phoneRe = /(01[016789][-.\s]?\d{3,4}[-.\s]?\d{4})|(0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4})/;
+  const emailRe = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  const addrRe = /(특별시|광역시|자치도|자치시|[가-힣]{1,4}(시|도|군|구|읍|면|동|로|길)\s?\d)/;
+  const nameRe = /^[가-힣]{2,4}(\s?(대표|대표이사|이사|부장|과장|차장|팀장|사장|주임|매니저|본부장|실장|소장))?$/;
+  const titleSuffixRe = /\s?(대표|대표이사|이사|부장|과장|차장|팀장|사장|주임|매니저|본부장|실장|소장)$/;
+  const companyRe = /(주식회사|㈜|\(주\)|건설|산업|개발|이엔씨|E&C|Co\.|Corp)/i;
+
+  lines.forEach(line => {
+    const emailMatch = line.match(emailRe);
+    if(emailMatch && !result.email){ result.email = emailMatch[0]; return; }
+
+    const isFaxLabeled = /fax|팩스/i.test(line);
+    const phoneMatch = line.match(phoneRe);
+    if(phoneMatch){
+      const num = phoneMatch[0];
+      if(isFaxLabeled && !result.fax){ result.fax = num; return; }
+      if(!result.phone){ result.phone = num; return; }
+      if(!result.fax){ result.fax = num; return; }
+    }
+
+    if(!result.address && addrRe.test(line) && line.length >= 6){ result.address = line; return; }
+
+    if(!result.contactName && nameRe.test(line)){ result.contactName = line.replace(titleSuffixRe, '').trim(); return; }
+  });
+
+  let companyLine = lines.find(l => companyRe.test(l));
+  if(!companyLine){
+    companyLine = lines.find(l => !emailRe.test(l) && !phoneRe.test(l) && !addrRe.test(l) && !nameRe.test(l));
+  }
+  result.name = companyLine ? companyLine.replace(/\s{2,}/g, ' ').trim() : '';
+
+  return result;
+}
+
+async function handleCardImage(file){
+  if(!file || !file.type.startsWith('image/')){ showToast('이미지 파일만 등록할 수 있습니다'); return; }
+  if(typeof Tesseract === 'undefined'){
+    showToast('OCR 엔진을 불러오지 못했습니다 (인터넷 연결을 확인해주세요)');
+    return;
+  }
+  cardScanProgress.style.display = 'block';
+  cardScanProgress.textContent = '이미지를 읽는 중...';
+  const objectUrl = URL.createObjectURL(file);
+  try{
+    const { data } = await Tesseract.recognize(objectUrl, 'kor+eng', {
+      logger(m){
+        if(m.status === 'recognizing text' && typeof m.progress === 'number'){
+          cardScanProgress.textContent = `텍스트 인식 중... ${Math.round(m.progress * 100)}%`;
+        }
+      }
+    });
+    const parsed = parseBusinessCardText(data.text || '');
+    closeCardScan();
+    openAddCompanyModal('', parsed);
+  } catch(err){
+    console.error(err);
+    showToast('명함 인식에 실패했습니다. 직접 입력해주세요');
+  } finally {
+    URL.revokeObjectURL(objectUrl); // 명함 원본 이미지는 인식 후 즉시 폐기 (저장하지 않음)
+    cardScanProgress.style.display = 'none';
+  }
+}
 
 /* ---------- Render: Sidebar ---------- */
 function renderSidebar(){
@@ -893,23 +1027,34 @@ function computeCompanyMatches(query){
 }
 
 function renderCompanyPanel(company){
-  const doneCount = company.checklist.filter(i=>i.done).length;
+  const infoRows = [
+    ['담당자', company.contactName],
+    ['전화번호', company.phone],
+    ['팩스번호', company.fax],
+    ['이메일', company.email],
+    ['주소', company.address]
+  ];
   return `
     <div class="card highlight" data-entry="company-${company.id}">
       <div class="card-head">
         <div class="card-title" style="margin:0;">🏢 ${escapeHtml(company.name)}</div>
         <div class="card-actions">
-          <span style="font-size:12px;font-weight:600;color:var(--text-gray);align-self:center;white-space:nowrap;">${doneCount} / ${company.checklist.length} 완료</span>
+          <button class="icon-btn" data-action="company-edit" data-id="${company.id}" title="정보 수정">✎</button>
           <button class="icon-btn danger" data-action="company-delete" data-id="${company.id}" title="업체 삭제">🗑</button>
         </div>
       </div>
-      <div>
-        ${company.checklist.map(item => `
-          <div class="todo-item ${item.done?'done':''}">
-            <input type="checkbox" ${item.done?'checked':''} data-action="company-check-toggle" data-company="${company.id}" data-item="${item.id}" id="cchk-${item.id}" />
-            <span>${escapeHtml(item.label)}</span>
+      <div class="company-info-grid">
+        ${infoRows.map(([label, val]) => `
+          <div class="company-info-item${label==='주소' ? ' company-info-wide' : ''}">
+            <span class="company-info-label">${label}</span>
+            <span class="company-info-val">${val ? escapeHtml(val) : '-'}</span>
           </div>
         `).join('')}
+      </div>
+      <div class="company-memo">
+        <div class="company-memo-label">업체 메모</div>
+        <textarea class="company-memo-textarea" data-action="company-memo-input" data-id="${company.id}"
+          placeholder="자유롭게 메모를 입력하세요 (입력 즉시 자동 저장)">${escapeHtml(company.memo || '')}</textarea>
       </div>
     </div>
   `;
@@ -956,17 +1101,61 @@ function updateCompanySearchUI(){
   resultEl.innerHTML = companyResultHTML(companySearchQuery);
 }
 
-function openAddCompanyModal(prefillName){
+function openAddCompanyModal(prefillName, ocrResult){
+  const pre = ocrResult || {};
   openModal({
-    title:'업체 등록', submitLabel:'등록',
-    fields:[{name:'name', label:'업체명', value: prefillName || '', placeholder:'예: 동신도장'}],
+    title: ocrResult ? '명함 인식 결과 확인 후 등록' : '업체 등록',
+    submitLabel:'등록',
+    fields:[
+      {name:'name', label:'시공사명', value: prefillName || pre.name || '', placeholder:'예: 동신도장'},
+      {name:'contactName', label:'담당자 이름', value: pre.contactName || '', placeholder:'예: 홍길동 과장'},
+      {name:'phone', label:'전화번호', value: pre.phone || '', placeholder:'예: 010-1234-5678'},
+      {name:'fax', label:'팩스번호', value: pre.fax || '', placeholder:'예: 02-123-4567'},
+      {name:'email', label:'이메일', value: pre.email || '', placeholder:'예: name@company.com'},
+      {name:'address', label:'주소', value: pre.address || '', placeholder:'예: 서울시 ...'}
+    ],
     onSubmit(data){
       const name = (data.name || '').trim();
       if(!name) return;
       if(state.companies.some(c => c.name.toLowerCase() === name.toLowerCase())){
         showToast('이미 등록된 업체입니다'); return;
       }
-      state.companies.push({id:uid(), name, checklist:createChecklist()});
+      state.companies.push({
+        id:uid(), name,
+        contactName: data.contactName || '', phone: data.phone || '', fax: data.fax || '',
+        email: data.email || '', address: data.address || '', memo: ''
+      });
+      companySearchQuery = name;
+      saveState(); render();
+    }
+  });
+}
+
+function openEditCompanyModal(companyId){
+  const c = state.companies.find(c=>c.id===companyId);
+  if(!c) return;
+  openModal({
+    title:'업체 정보 수정', submitLabel:'저장',
+    fields:[
+      {name:'name', label:'시공사명', value: c.name},
+      {name:'contactName', label:'담당자 이름', value: c.contactName || ''},
+      {name:'phone', label:'전화번호', value: c.phone || ''},
+      {name:'fax', label:'팩스번호', value: c.fax || ''},
+      {name:'email', label:'이메일', value: c.email || ''},
+      {name:'address', label:'주소', value: c.address || ''}
+    ],
+    onSubmit(data){
+      const name = (data.name || '').trim();
+      if(!name) return;
+      if(state.companies.some(x => x.id !== c.id && x.name.toLowerCase() === name.toLowerCase())){
+        showToast('이미 등록된 업체명입니다'); return;
+      }
+      c.name = name;
+      c.contactName = data.contactName || '';
+      c.phone = data.phone || '';
+      c.fax = data.fax || '';
+      c.email = data.email || '';
+      c.address = data.address || '';
       companySearchQuery = name;
       saveState(); render();
     }
@@ -976,10 +1165,13 @@ function openAddCompanyModal(prefillName){
 function renderCompaniesView(){
   const suggestHtml = companySuggestHTML(companySearchQuery);
   return `
-    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-topbar">
+      <span class="crumb">TOOLS</span>
+      <span class="right"><button class="fab-add" style="margin:0;" data-action="company-scan-open">📷 명함 스캔</button></span>
+    </div>
     <div class="view-header">
       <h1>🏢 업체 관리</h1>
-      <p>업체명을 검색하면 체크리스트가 자동으로 표시됩니다. 체크 상태는 즉시 저장되어 다음에도 그대로 유지됩니다.</p>
+      <p>업체명을 검색하면 담당자·연락처·메모가 자동으로 표시됩니다. 입력 내용은 즉시 저장되어 다음에도 그대로 유지됩니다.</p>
     </div>
     <div class="card">
       <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -1136,10 +1328,8 @@ contentEl.addEventListener('click', (e)=>{
       updateCompanySearchUI();
     }
   }
-  else if(action === 'company-check-toggle'){
-    const c = state.companies.find(c=>c.id===btn.dataset.company);
-    const item = c && c.checklist.find(i=>i.id===btn.dataset.item);
-    if(item){ item.done = !item.done; saveState(); updateCompanySearchUI(); }
+  else if(action === 'company-edit'){
+    openEditCompanyModal(btn.dataset.id);
   }
   else if(action === 'company-delete'){
     const c = state.companies.find(c=>c.id===btn.dataset.id);
@@ -1152,9 +1342,17 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'company-add-open'){
     openAddCompanyModal(companySearchQuery);
   }
+  else if(action === 'company-scan-open'){
+    openCardScan();
+  }
 });
 
 contentEl.addEventListener('input', (e)=>{
+  if(e.target && e.target.matches && e.target.matches('[data-action="company-memo-input"]')){
+    const c = state.companies.find(c=>c.id===e.target.dataset.id);
+    if(c){ c.memo = e.target.value; saveState(); }
+    return;
+  }
   if(e.target && e.target.id === 'companySearchInput'){
     companySearchQuery = e.target.value;
     updateCompanySearchUI();
@@ -1193,7 +1391,7 @@ function buildSearchIndex(){
   state.phrases.forEach(p => idx.push({ id:`phrase-${p.id}`, view:{type:'phrases'}, chap:'자주 쓰는 멘트', text: `${p.title} ${p.body}` }));
   state.companies.forEach(c => idx.push({
     id:`company-${c.id}`, view:{type:'companies', companyId:c.id}, chap:'업체 관리',
-    text: `${c.name} 업체 체크리스트 ${c.checklist.map(i=>i.label).join(' ')}`
+    text: [c.name, c.contactName, c.phone, c.fax, c.email, c.address, c.memo].filter(Boolean).join(' ')
   }));
   return idx;
 }
@@ -1423,6 +1621,7 @@ function getQuickLinkIcon(title){
   }
   return { cls:'', style:'', html: escapeHtml(t.charAt(0).toUpperCase() || '#') };
 }
+/* 상단 바로가기: 고정 업무 런처 형태 — 삭제(X) 없이 클릭 시 바로 이동만 수행 */
 function renderQuickLinks(){
   let html = state.links.map(l => {
     const icon = getQuickLinkIcon(l.title);
@@ -1432,7 +1631,6 @@ function renderQuickLinks(){
         <span class="qlink-icon ${icon.cls}" style="${icon.style}">${icon.html}</span>
         <span class="qlink-title">${escapeHtml(l.title)}</span>
       </a>
-      <button class="qdel" data-action="qlink-delete" data-id="${l.id}" title="삭제">✕</button>
     </div>
   `;
   }).join('');
@@ -1444,14 +1642,6 @@ function renderQuickLinks(){
 quickLinksEl.addEventListener('click', (e)=>{
   const addBtn = e.target.closest('[data-action="qlink-add-slot"]');
   if(addBtn){ openAddQuickLinkModal(); return; }
-  const del = e.target.closest('.qdel');
-  if(!del) return;
-  e.preventDefault(); e.stopPropagation();
-  const link = state.links.find(l=>l.id===del.dataset.id);
-  if(link && confirm(`"${link.title}" 바로가기를 삭제할까요?`)){
-    state.links = state.links.filter(l=>l.id!==link.id);
-    saveState(); renderQuickLinks();
-  }
 });
 
 /* ---------- Note Panel (할 일 목록, 상단 📝 아이콘 → 오른쪽 슬라이드 패널) ---------- */
