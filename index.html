@@ -307,25 +307,40 @@
     border-radius:999px;min-width:16px;height:16px;padding:0 3px;display:flex;align-items:center;justify-content:center;
   }
 
-  /* Vault modal */
-  .vault-modal{max-width:500px;}
-  .vault-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+  /* Vault modal: 사이트명 중심의 컴팩트 한 줄 레이아웃 */
+  .vault-modal{max-width:560px;}
+  .vault-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
   .vault-head h2{margin:0;font-size:18px;}
-  .vault-desc{margin:0 0 16px;font-size:12.5px;color:var(--text-gray);}
-  .vault-item{border:1px solid var(--card-border);border-radius:12px;padding:14px;margin-bottom:10px;position:relative;}
-  .vault-site{font-weight:700;font-size:14px;margin-bottom:8px;}
-  .vault-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
-  .vault-row:last-of-type{margin-bottom:0;}
-  .vault-label{flex:0 0 46px;font-size:11px;font-weight:700;color:var(--text-gray);}
-  .vault-val{
-    flex:1;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;
-    background:#f7f9fc;border-radius:6px;padding:5px 9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  .vault-list{max-height:360px;overflow-y:auto;margin:0 -4px;}
+  .vault-item{
+    display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid #f0f1f5;
   }
-  .vault-del{position:absolute;top:12px;right:12px;}
-  .vault-add-form{display:flex;flex-direction:column;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .vault-item:hover{background:#fafbfd;}
+  .vault-site{
+    flex:0 0 auto;width:112px;font-weight:700;font-size:14px;color:var(--text-dark);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .vault-fields{display:flex;align-items:center;gap:4px;flex:1;min-width:0;}
+  .vault-field-label{
+    flex:none;font-size:9.5px;font-weight:700;color:var(--text-light-gray);
+    letter-spacing:.04em;text-transform:uppercase;
+  }
+  .vault-field-val{
+    flex:0 1 96px;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;
+    background:#f7f9fc;border-radius:5px;padding:3px 7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .vault-icon-btn{
+    flex:none;background:none;border:none;padding:3px;font-size:13px;color:var(--text-light-gray);cursor:pointer;
+    border-radius:5px;line-height:1;
+  }
+  .vault-icon-btn:hover{color:var(--accent-dark);background:#e6fbf8;}
+  .vault-icon-btn.danger{margin-left:4px;}
+  .vault-icon-btn.danger:hover{color:var(--danger);background:#fdeceb;}
+  .vault-add-form{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--card-border);}
   .vault-add-form input{
-    padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);font-size:14px;font-family:inherit;
+    flex:1;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--card-border);font-size:13.5px;font-family:inherit;
   }
+  .vault-add-form button{flex:none;}
 
   /* Note panel (할 일 목록, 오른쪽에서 슬라이드) */
   .note-panel-overlay{
@@ -446,8 +461,7 @@
       <h2>🔒 계정 정보</h2>
       <button class="icon-btn" id="vaultClose" title="닫기">✕</button>
     </div>
-    <p class="vault-desc">자주 까먹는 사이트 아이디·비밀번호를 저장해두고 복사해서 쓰세요.</p>
-    <div id="vaultList"></div>
+    <div class="vault-list" id="vaultList"></div>
     <form class="vault-add-form" id="vaultAddForm">
       <input type="text" name="site" placeholder="사이트/서비스 이름" required />
       <input type="text" name="username" placeholder="아이디" />
@@ -1220,19 +1234,17 @@ const revealedPw = new Set();
 function renderVault(){
   vaultList.innerHTML = state.credentials.map(c => `
     <div class="vault-item">
-      <button class="icon-btn danger vault-del" data-action="cred-delete" data-id="${c.id}" title="삭제">🗑</button>
       <div class="vault-site">${escapeHtml(c.site)}</div>
-      <div class="vault-row">
-        <span class="vault-label">아이디</span>
-        <span class="vault-val">${escapeHtml(c.username || '-')}</span>
-        <button class="copy-btn" data-action="cred-copy" data-id="${c.id}" data-field="username">📋</button>
+      <div class="vault-fields">
+        <span class="vault-field-label">ID</span>
+        <span class="vault-field-val">${escapeHtml(c.username || '-')}</span>
+        <button class="vault-icon-btn" data-action="cred-copy" data-id="${c.id}" data-field="username" title="아이디 복사">📋</button>
+        <span class="vault-field-label">PW</span>
+        <span class="vault-field-val">${revealedPw.has(c.id) ? escapeHtml(c.password || '-') : '•'.repeat(Math.max(6, (c.password||'').length))}</span>
+        <button class="vault-icon-btn" data-action="cred-toggle" data-id="${c.id}" title="보기/숨기기">${revealedPw.has(c.id) ? '🙈' : '👁'}</button>
+        <button class="vault-icon-btn" data-action="cred-copy" data-id="${c.id}" data-field="password" title="비밀번호 복사">📋</button>
       </div>
-      <div class="vault-row">
-        <span class="vault-label">비밀번호</span>
-        <span class="vault-val">${revealedPw.has(c.id) ? escapeHtml(c.password || '-') : '•'.repeat(Math.max(6, (c.password||'').length))}</span>
-        <button class="copy-btn" data-action="cred-toggle" data-id="${c.id}" title="보기/숨기기">${revealedPw.has(c.id) ? '🙈' : '👁'}</button>
-        <button class="copy-btn" data-action="cred-copy" data-id="${c.id}" data-field="password">📋</button>
-      </div>
+      <button class="vault-icon-btn danger" data-action="cred-delete" data-id="${c.id}" title="삭제">🗑</button>
     </div>
   `).join('') || '<div class="empty-state">등록된 계정 정보가 없습니다</div>';
 }
