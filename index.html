@@ -69,10 +69,6 @@
   hr.sep{border:none;border-top:1px solid var(--sb-border);margin:0 0 22px;}
 
   .nav-section{margin-bottom:26px;}
-  .nav-label{
-    font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--sb-text-sub);
-    padding:0 2px 10px;
-  }
   .nav-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
   .nav-item{
     display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:4px;
@@ -82,8 +78,8 @@
   }
   .nav-item:hover{background:var(--sb-hover);border-color:var(--sb-navy);}
   .nav-item.active{background:var(--sb-navy);border-color:var(--sb-navy);color:#fff;}
-  .nav-item .num{font-size:11px;color:var(--sb-text-faint);width:18px;flex:0 0 18px;}
-  .nav-item.active .num{color:rgba(255,255,255,.7);}
+  .nav-item.drag-over{border-color:var(--sb-navy);box-shadow:inset 0 2px 0 var(--sb-navy);}
+  .nav-item.dragging{opacity:.45;}
   .nav-item span.label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .nav-item .badge{
     background:var(--sb-navy);color:#fff;font-size:11px;font-weight:700;
@@ -96,14 +92,10 @@
   }
   .nav-add:hover{color:var(--sb-navy);border-color:var(--sb-navy);background:var(--sb-hover);}
   .sidebar-footer{
-    margin-top:auto;padding-top:20px;border-top:1px solid var(--sb-border);font-size:11px;color:var(--sb-text-faint);
+    margin-top:auto;padding-top:20px;border-top:1px solid var(--sb-border);
     display:flex;flex-direction:column;gap:8px;
   }
-  .reset-btn{
-    background:none;border:none;color:var(--sb-text-faint);font-size:11px;text-align:left;
-    cursor:pointer;padding:0;text-decoration:underline;
-  }
-  .reset-btn:hover{color:var(--sb-navy);}
+  .sidebar-footer-title{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--sb-text-sub);}
 
   /* AI 업무비서: 사이드바 맨 아래 메모장 스타일 입력창 */
   .ai-note-composer{
@@ -493,29 +485,12 @@
     <hr class="sep" />
 
     <div class="nav-section">
-      <div class="nav-label">WORKFLOW</div>
-      <ul class="nav-list" id="guideList"></ul>
+      <ul class="nav-list" id="unifiedNavList"></ul>
       <button class="nav-add" id="addGuideBtn">+ 새 가이드 추가</button>
     </div>
 
-    <div class="nav-section">
-      <div class="nav-label">TOOLS</div>
-      <ul class="nav-list">
-        <li class="nav-item" data-view="phrases"><span class="label">자주 쓰는 멘트</span></li>
-        <li class="nav-item" data-view="companies"><span class="label">업체 관리</span></li>
-      </ul>
-    </div>
-
-    <div class="nav-section">
-      <div class="nav-label">연결된 매뉴얼</div>
-      <ul class="nav-list">
-        <li class="nav-item"><a href="call-manual.html" target="_blank" rel="noopener" style="display:flex;align-items:center;color:inherit;text-decoration:none;width:100%;"><span class="label">POUR공법 전화응대 매뉴얼</span></a></li>
-      </ul>
-    </div>
-
     <div class="sidebar-footer">
-      <span>업무하며 헷갈리는 것들을 계속 정리하는 나만의 매뉴얼</span>
-      <button class="reset-btn" id="resetBtn">예시 데이터로 초기화</button>
+      <span class="sidebar-footer-title">나만의 매뉴얼</span>
     </div>
 
     <div class="ai-note-composer">
@@ -624,6 +599,13 @@ const DEFAULT_STATE = {
   companies:[
     {id:uid(), name:'예시 업체', contactName:'', phone:'', fax:'', email:'', address:'', memo:''}
   ],
+  // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
+  navOrder:[
+    {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
+    {id:'nav-phrases', kind:'phrases'},
+    {id:'nav-companies', kind:'companies'},
+    {id:'nav-manual', kind:'manual'}
+  ],
   currentView:{type:'guide', id:'g1'}
 };
 
@@ -635,6 +617,7 @@ function loadState(){
       // 이전 버전 데이터 호환: 새로 추가된 필드가 없으면 채워줌
       if(!parsed.credentials) parsed.credentials = [];
       if(!parsed.companies) parsed.companies = [];
+      if(!Array.isArray(parsed.navOrder)) parsed.navOrder = [];
       return parsed;
     }
   }catch(e){}
@@ -873,35 +856,102 @@ async function handleCardImage(file){
 }
 
 /* ---------- Render: Sidebar ---------- */
+/* 사이드바 통합 목록: 카테고리 구분 없이 가이드/멘트/업체관리/매뉴얼을 하나의 순서로 관리 */
+function syncNavOrder(){
+  if(!Array.isArray(state.navOrder)) state.navOrder = [];
+  state.guides.forEach(g => {
+    if(!state.navOrder.some(e => e.kind === 'guide' && e.guideId === g.id)){
+      state.navOrder.push({id:`nav-guide-${g.id}`, kind:'guide', guideId:g.id});
+    }
+  });
+  state.navOrder = state.navOrder.filter(e => e.kind !== 'guide' || state.guides.some(g => g.id === e.guideId));
+  ['phrases','companies','manual'].forEach(kind => {
+    if(!state.navOrder.some(e => e.kind === kind)){
+      state.navOrder.push({id:`nav-${kind}`, kind});
+    }
+  });
+}
+function getNavItems(){
+  return state.navOrder.map(entry => {
+    if(entry.kind === 'guide'){
+      const g = state.guides.find(g => g.id === entry.guideId);
+      if(!g) return null;
+      return { navId:entry.id, kind:'guide', guideId:g.id, label:g.title,
+        active: state.currentView.type === 'guide' && state.currentView.id === g.id };
+    }
+    if(entry.kind === 'phrases') return { navId:entry.id, kind:'phrases', label:'자주 쓰는 멘트', active: state.currentView.type === 'phrases' };
+    if(entry.kind === 'companies') return { navId:entry.id, kind:'companies', label:'업체 관리', active: state.currentView.type === 'companies' };
+    if(entry.kind === 'manual') return { navId:entry.id, kind:'manual', label:'POUR공법 전화응대 매뉴얼', active:false };
+    return null;
+  }).filter(Boolean);
+}
+
 function renderSidebar(){
   document.getElementById('brandTitle').textContent = state.brand.title;
 
-  const guideList = document.getElementById('guideList');
-  guideList.innerHTML = state.guides.map((g, i) => `
-    <li class="nav-item ${state.currentView.type==='guide' && state.currentView.id===g.id ? 'active':''}" data-guide-nav="${g.id}">
-      <span class="num">${String(i+1).padStart(2,'0')}</span>
-      <span class="label">${escapeHtml(g.title)}</span>
+  syncNavOrder();
+  const items = getNavItems();
+  const unifiedNavList = document.getElementById('unifiedNavList');
+  unifiedNavList.innerHTML = items.map((item, i) => `
+    <li class="nav-item ${item.active ? 'active' : ''}" draggable="true"
+      data-nav-id="${item.navId}" data-nav-index="${i}" data-kind="${item.kind}"
+      ${item.kind === 'guide' ? `data-guide-id="${item.guideId}"` : ''}>
+      <span class="label">${escapeHtml(item.label)}</span>
     </li>
-  `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">아직 가이드가 없습니다</li>';
-
-  document.querySelectorAll('[data-view]').forEach(el => {
-    el.classList.toggle('active', state.currentView.type === el.dataset.view);
-  });
-  document.getElementById('todoBadge').textContent = state.todos.filter(t=>!t.done).length;
+  `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">항목이 없습니다</li>';
 }
 
-document.getElementById('guideList').addEventListener('click', (e)=>{
-  const li = e.target.closest('[data-guide-nav]');
+const unifiedNavListEl = document.getElementById('unifiedNavList');
+unifiedNavListEl.addEventListener('click', (e)=>{
+  const li = e.target.closest('[data-nav-id]');
   if(!li) return;
-  state.currentView = {type:'guide', id: li.dataset.guideNav};
-  saveState(); render();
-});
-document.querySelectorAll('[data-view]').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    state.currentView = {type: el.dataset.view};
+  const kind = li.dataset.kind;
+  if(kind === 'guide'){
+    state.currentView = {type:'guide', id: li.dataset.guideId};
     saveState(); render();
-  });
+  } else if(kind === 'phrases' || kind === 'companies'){
+    state.currentView = {type: kind};
+    saveState(); render();
+  } else if(kind === 'manual'){
+    window.open('call-manual.html', '_blank', 'noopener');
+  }
 });
+
+/* 드래그 앤 드롭으로 순서 변경, 결과는 navOrder에 저장 */
+let navDragFromIndex = null;
+unifiedNavListEl.addEventListener('dragstart', (e)=>{
+  const li = e.target.closest('[data-nav-id]');
+  if(!li) return;
+  navDragFromIndex = Number(li.dataset.navIndex);
+  e.dataTransfer.effectAllowed = 'move';
+  li.classList.add('dragging');
+});
+unifiedNavListEl.addEventListener('dragend', (e)=>{
+  const li = e.target.closest('[data-nav-id]');
+  if(li) li.classList.remove('dragging');
+  unifiedNavListEl.querySelectorAll('.nav-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+  navDragFromIndex = null;
+});
+unifiedNavListEl.addEventListener('dragover', (e)=>{
+  const li = e.target.closest('[data-nav-id]');
+  if(!li || navDragFromIndex === null) return;
+  e.preventDefault();
+  unifiedNavListEl.querySelectorAll('.nav-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+  if(Number(li.dataset.navIndex) !== navDragFromIndex) li.classList.add('drag-over');
+});
+unifiedNavListEl.addEventListener('drop', (e)=>{
+  const li = e.target.closest('[data-nav-id]');
+  if(!li || navDragFromIndex === null) return;
+  e.preventDefault();
+  const toIndex = Number(li.dataset.navIndex);
+  if(toIndex !== navDragFromIndex){
+    const [moved] = state.navOrder.splice(navDragFromIndex, 1);
+    state.navOrder.splice(toIndex, 0, moved);
+    saveState();
+  }
+  render();
+});
+
 document.getElementById('addGuideBtn').addEventListener('click', ()=>{
   openModal({
     title:'새 가이드 추가',
@@ -917,6 +967,7 @@ document.getElementById('addGuideBtn').addEventListener('click', ()=>{
       const g = {id:uid(), tag:data.tag, rightLabel:data.rightLabel, title:data.title, subtitle:data.subtitle,
         steps:[], blocks:[]};
       state.guides.push(g);
+      state.navOrder.push({id:`nav-guide-${g.id}`, kind:'guide', guideId:g.id});
       state.currentView = {type:'guide', id:g.id};
       saveState(); render();
     }
@@ -929,12 +980,6 @@ document.getElementById('editBrandBtn').addEventListener('click', ()=>{
     fields:[{name:'title', label:'표시할 이름', value: state.brand.title}],
     onSubmit(data){ state.brand.title = data.title || 'MY WORK'; saveState(); render(); }
   });
-});
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(confirm('모든 데이터를 예시 데이터로 초기화할까요? 지금까지 작성한 내용은 사라집니다.')){
-    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    saveState(); render();
-  }
 });
 
 /* ---------- Render: Content ---------- */
@@ -1258,7 +1303,8 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'guide-delete'){
     if(confirm(`"${guide.title}" 가이드를 삭제할까요?`)){
       state.guides = state.guides.filter(g=>g.id!==guide.id);
-      state.currentView = state.guides[0] ? {type:'guide', id:state.guides[0].id} : {type:'todos'};
+      state.navOrder = state.navOrder.filter(e => !(e.kind === 'guide' && e.guideId === guide.id));
+      state.currentView = state.guides[0] ? {type:'guide', id:state.guides[0].id} : {type:'phrases'};
       saveState(); render();
     }
   }
