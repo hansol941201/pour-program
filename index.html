@@ -148,6 +148,30 @@
     padding:5px 12px;font-size:13px;cursor:pointer;
   }
   .step-add-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .step-add-btn.active{border-style:solid;border-color:var(--accent);color:var(--accent-dark);background:#e6fbf8;}
+
+  /* 워크플로우 단계 전용: 전화 메모 버튼 (다른 메뉴에는 적용되지 않음) */
+  .step-phone-btn{
+    background:none;border:none;color:var(--navy);cursor:pointer;font-size:13px;margin-left:2px;
+    line-height:1;padding:0;
+  }
+  .step-phone-btn:hover{color:var(--accent-dark);}
+  .step-phone-toggle{
+    background:#f7f9fc;border:1px dashed var(--card-border);color:var(--text-gray);cursor:pointer;
+    font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 6px;margin-left:2px;line-height:1.4;
+  }
+  .step-phone-toggle:hover{border-color:var(--navy);color:var(--navy);}
+
+  /* 전화 메모 패널: 저장 버튼 없이 입력 즉시 자동 저장 */
+  .phone-note-modal{max-width:420px;}
+  .phone-note-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+  .phone-note-head h2{margin:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .phone-note-textarea{
+    width:100%;min-height:220px;padding:10px 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:14px;font-family:inherit;resize:vertical;
+  }
+  .phone-note-textarea:focus{outline:none;border-color:var(--accent);}
+  .phone-note-hint{font-size:11px;color:var(--text-light-gray);margin-top:8px;}
 
   .card{
     background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;
@@ -471,6 +495,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="phoneNoteOverlay">
+  <div class="modal phone-note-modal">
+    <div class="phone-note-head">
+      <h2 id="phoneNoteTitle">📞 전화 메모</h2>
+      <button class="icon-btn" id="phoneNoteClose" title="닫기">✕</button>
+    </div>
+    <textarea id="phoneNoteTextarea" class="phone-note-textarea" placeholder="통화 중/통화 후 메모를 자유롭게 입력하세요"></textarea>
+    <div class="phone-note-hint">입력 즉시 자동 저장됩니다</div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -549,6 +584,7 @@ function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); 
 
 let state = loadState();
 let companySearchQuery = ''; // 업체 검색어(임시 상태, localStorage에는 저장하지 않음)
+let stepEditMode = false; // 워크플로우 단계의 전화메모 버튼 편집 모드(임시 상태, localStorage에는 저장하지 않음)
 
 /* ---------- Toast & Copy ---------- */
 function showToast(msg){
@@ -615,6 +651,35 @@ document.getElementById('modalOverlay').addEventListener('click', (e)=>{
 function escapeHtml(str){
   return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+/* ---------- 전화 메모 (워크플로우 단계 전용, 저장 버튼 없이 자동 저장) ---------- */
+let currentPhoneNote = null; // {guideId, stepId}
+const phoneNoteOverlay = document.getElementById('phoneNoteOverlay');
+const phoneNoteTitle = document.getElementById('phoneNoteTitle');
+const phoneNoteTextarea = document.getElementById('phoneNoteTextarea');
+
+function openPhoneNote(guideId, stepId){
+  const guide = state.guides.find(g=>g.id===guideId);
+  const step = guide && guide.steps.find(s=>s.id===stepId);
+  if(!step) return;
+  currentPhoneNote = {guideId, stepId};
+  phoneNoteTitle.textContent = `📞 ${step.label}`;
+  phoneNoteTextarea.value = step.phoneNote || '';
+  phoneNoteOverlay.classList.add('open');
+  phoneNoteTextarea.focus();
+}
+function closePhoneNote(){
+  phoneNoteOverlay.classList.remove('open');
+  currentPhoneNote = null;
+}
+document.getElementById('phoneNoteClose').addEventListener('click', closePhoneNote);
+phoneNoteOverlay.addEventListener('click', (e)=>{ if(e.target.id === 'phoneNoteOverlay') closePhoneNote(); });
+phoneNoteTextarea.addEventListener('input', (e)=>{
+  if(!currentPhoneNote) return;
+  const guide = state.guides.find(g=>g.id===currentPhoneNote.guideId);
+  const step = guide && guide.steps.find(s=>s.id===currentPhoneNote.stepId);
+  if(step){ step.phoneNote = e.target.value; saveState(); }
+});
 
 /* ---------- Render: Sidebar ---------- */
 function renderSidebar(){
@@ -720,10 +785,13 @@ function renderGuideView(g){
         ${i>0 ? '<span class="step-arrow">→</span>' : ''}
         <span class="step-chip">
           <span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(s.label)}
+          ${s.hasPhone ? `<button class="step-phone-btn" data-action="step-phone-open" data-guide="${g.id}" data-step="${s.id}" title="전화 메모 열기">📞</button>` : ''}
+          ${stepEditMode ? `<button class="step-phone-toggle" data-action="step-phone-toggle" data-guide="${g.id}" data-step="${s.id}" title="${s.hasPhone ? '전화 메모 버튼 삭제' : '전화 메모 버튼 추가'}">${s.hasPhone ? '☎ 제거' : '☎ 추가'}</button>` : ''}
           <button class="step-del" data-action="step-delete" data-guide="${g.id}" data-step="${s.id}" title="삭제">✕</button>
         </span>
       `).join('')}
       <button class="step-add-btn" data-action="step-add" data-guide="${g.id}">+ 단계 추가</button>
+      <button class="step-add-btn ${stepEditMode ? 'active' : ''}" data-action="step-edit-toggle" data-guide="${g.id}">${stepEditMode ? '✓ 전화메모 편집 완료' : '☎ 전화메모 편집'}</button>
     </div>
 
     ${g.blocks.map(b => `
@@ -959,6 +1027,17 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'step-delete'){
     guide.steps = guide.steps.filter(s=>s.id!==btn.dataset.step);
     saveState(); render();
+  }
+  else if(action === 'step-edit-toggle'){
+    stepEditMode = !stepEditMode;
+    render();
+  }
+  else if(action === 'step-phone-toggle'){
+    const step = guide.steps.find(s=>s.id===btn.dataset.step);
+    if(step){ step.hasPhone = !step.hasPhone; saveState(); render(); }
+  }
+  else if(action === 'step-phone-open'){
+    openPhoneNote(guide.id, btn.dataset.step);
   }
   else if(action === 'block-add'){
     openModal({
