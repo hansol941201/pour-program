@@ -228,18 +228,22 @@
   }
   .company-memo-textarea:focus{outline:none;border-color:var(--accent);}
 
-  /* 명함 스캔 모달 */
-  .card-scan-modal{max-width:440px;}
-  .card-scan-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-  .card-scan-head h2{margin:0;font-size:16px;}
-  .card-scan-drop{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
-    border:2px dashed var(--card-border);border-radius:12px;padding:36px 20px;cursor:pointer;
-    background:var(--bg);color:var(--text-gray);font-size:13.5px;
+  /* 업체 관리: 명함/사업자등록증 첨부 영역 (모달 아님, 화면에 항상 표시) */
+  .attach-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .attach-zone-label{font-size:12.5px;font-weight:700;color:var(--text-dark);margin-bottom:8px;}
+  .attach-drop{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;
+    border:2px dashed var(--card-border);border-radius:10px;padding:24px 14px;cursor:pointer;
+    background:var(--bg);color:var(--text-gray);font-size:12.5px;min-height:96px;
   }
-  .card-scan-drop:hover, .card-scan-drop.drag{border-color:var(--navy);background:var(--navy-soft);color:var(--navy);}
-  .card-scan-hint{font-size:11.5px;color:var(--text-light-gray);}
-  .card-scan-progress{margin-top:14px;font-size:13px;color:var(--text-gray);text-align:center;}
+  .attach-drop:hover, .attach-drop.drag{border-color:var(--accent);background:var(--hover-blue-soft);color:var(--accent);}
+  .attach-drop-btn{
+    background:var(--card-bg);border:1px solid var(--card-border);border-radius:6px;padding:5px 12px;
+    font-size:12px;font-weight:700;color:var(--accent);pointer-events:none;
+  }
+  .attach-hint{font-size:11px;color:var(--text-light-gray);margin-top:10px;}
+  .attach-progress{margin-top:10px;font-size:12.5px;color:var(--text-gray);text-align:center;}
+  @media (max-width:640px){ .attach-grid{grid-template-columns:1fr;} }
   .copy-btn{
     background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;
     padding:6px 12px;font-size:12px;font-weight:600;color:var(--text-gray);cursor:pointer;
@@ -554,20 +558,6 @@
   <div class="phone-popover-hint">입력 즉시 자동 저장됩니다</div>
 </div>
 
-<div class="modal-overlay" id="cardScanOverlay">
-  <div class="modal card-scan-modal">
-    <div class="card-scan-head">
-      <h2>📷 명함 스캔</h2>
-      <button class="icon-btn" id="cardScanClose" title="닫기">✕</button>
-    </div>
-    <label class="card-scan-drop" id="cardScanDrop" for="cardScanFileInput">
-      <div>이미지를 드래그하거나 클릭해서 선택하세요</div>
-      <div class="card-scan-hint">명함 이미지는 저장되지 않고, 인식된 정보만 저장됩니다</div>
-    </label>
-    <input type="file" id="cardScanFileInput" accept="image/*" hidden />
-    <div class="card-scan-progress" id="cardScanProgress" style="display:none;"></div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -617,7 +607,7 @@ const DEFAULT_STATE = {
     {id:uid(), site:'예시 사이트', username:'my_id', password:'my_password'}
   ],
   companies:[
-    {id:uid(), name:'예시 업체', contactName:'', phone:'', fax:'', email:'', address:'', memo:''}
+    {id:uid(), name:'예시 업체', contactName:'', repName:'', phone:'', fax:'', email:'', bizRegNo:'', address:'', memo:''}
   ],
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
@@ -775,37 +765,17 @@ document.addEventListener('keydown', (e)=>{
 window.addEventListener('scroll', ()=>{ if(phoneNotePopover.classList.contains('open')) closePhoneNote(); }, true);
 window.addEventListener('resize', ()=>{ if(phoneNotePopover.classList.contains('open')) closePhoneNote(); });
 
-/* ---------- 명함 스캔(OCR): 이미지는 저장하지 않고 인식 결과만 업체 등록 폼에 채워넣는다 ---------- */
-const cardScanOverlay = document.getElementById('cardScanOverlay');
-const cardScanDrop = document.getElementById('cardScanDrop');
-const cardScanFileInput = document.getElementById('cardScanFileInput');
-const cardScanProgress = document.getElementById('cardScanProgress');
-
-function openCardScan(){
-  cardScanOverlay.classList.add('open');
-  cardScanProgress.style.display = 'none';
-  cardScanProgress.textContent = '';
-  cardScanFileInput.value = '';
+/* ---------- 명함/사업자등록증 첨부(OCR): 이미지는 저장하지 않고 인식 결과만 업체 정보에 채워넣는다 ---------- */
+// 명함 + 사업자등록증을 각각(또는 둘 다) 첨부했을 때 인식 결과를 하나로 합쳐서 관리한다.
+// 겹치는 항목(예: 상호/주소)은 가장 최근에 첨부한 문서의 값으로 갱신된다.
+let pendingOcrData = {};
+function mergeOcrResult(newData){
+  Object.keys(newData).forEach(key => {
+    if(newData[key]) pendingOcrData[key] = newData[key];
+  });
 }
-function closeCardScan(){ cardScanOverlay.classList.remove('open'); }
-document.getElementById('cardScanClose').addEventListener('click', closeCardScan);
-cardScanOverlay.addEventListener('click', (e)=>{ if(e.target.id === 'cardScanOverlay') closeCardScan(); });
 
-cardScanFileInput.addEventListener('change', (e)=>{
-  const file = e.target.files && e.target.files[0];
-  if(file) handleCardImage(file);
-});
-cardScanDrop.addEventListener('click', (e)=>{ e.preventDefault(); cardScanFileInput.click(); });
-cardScanDrop.addEventListener('dragover', (e)=>{ e.preventDefault(); cardScanDrop.classList.add('drag'); });
-cardScanDrop.addEventListener('dragleave', ()=>{ cardScanDrop.classList.remove('drag'); });
-cardScanDrop.addEventListener('drop', (e)=>{
-  e.preventDefault();
-  cardScanDrop.classList.remove('drag');
-  const file = e.dataTransfer.files && e.dataTransfer.files[0];
-  if(file) handleCardImage(file);
-});
-
-/* 명함 원본 텍스트에서 시공사명/담당자/전화/팩스/이메일/주소를 추정 추출 (휴리스틱, 이미지 자체는 저장하지 않음) */
+/* 명함 원본 텍스트에서 시공사명/담당자/전화/팩스/이메일/주소를 추정 추출 (휴리스틱) */
 function parseBusinessCardText(rawText){
   const lines = String(rawText || '').split('\n').map(l => l.trim()).filter(Boolean);
   const result = { name:'', contactName:'', phone:'', fax:'', email:'', address:'' };
@@ -844,32 +814,65 @@ function parseBusinessCardText(rawText){
   return result;
 }
 
-async function handleCardImage(file){
+/* 사업자등록증 원본 텍스트에서 상호/대표자/사업자등록번호/사업장 주소를 추정 추출 (휴리스틱) */
+function parseBizRegText(rawText){
+  const lines = String(rawText || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const result = { name:'', repName:'', bizRegNo:'', address:'' };
+
+  const bizNoRe = /\d{3}[-.\s]?\d{2}[-.\s]?\d{5}/;
+  const addrRe = /(특별시|광역시|자치도|자치시|[가-힣]{1,4}(시|도|군|구|읍|면|동|로|길)\s?\d)/;
+  const companyRe = /(주식회사|㈜|\(주\)|건설|산업|개발|이엔씨|E&C|Co\.|Corp)/i;
+
+  lines.forEach(line => {
+    const noMatch = line.match(bizNoRe);
+    if(noMatch && !result.bizRegNo){ result.bizRegNo = noMatch[0]; }
+    if(/상호/.test(line) && !result.name){
+      const v = line.replace(/.*상호\s*[:：]?\s*/, '').trim();
+      if(v) result.name = v;
+    }
+    if(/(성명|대표자)/.test(line) && !result.repName){
+      const v = line.replace(/.*(성명|대표자)\s*[:：]?\s*/, '').trim();
+      if(v && !bizNoRe.test(v)) result.repName = v;
+    }
+    if(!result.address && addrRe.test(line) && line.length >= 6){
+      result.address = line.replace(/.*(사업장\s*소재지|소재지|주소)\s*[:：]?\s*/, '').trim();
+    }
+  });
+
+  if(!result.name){
+    const companyLine = lines.find(l => companyRe.test(l));
+    if(companyLine) result.name = companyLine.trim();
+  }
+  return result;
+}
+
+async function handleAttachImage(file, kind){
   if(!file || !file.type.startsWith('image/')){ showToast('이미지 파일만 등록할 수 있습니다'); return; }
   if(typeof Tesseract === 'undefined'){
     showToast('OCR 엔진을 불러오지 못했습니다 (인터넷 연결을 확인해주세요)');
     return;
   }
-  cardScanProgress.style.display = 'block';
-  cardScanProgress.textContent = '이미지를 읽는 중...';
+  const label = kind === 'card' ? '명함' : '사업자등록증';
+  const progressEl = document.getElementById('attachProgress');
+  if(progressEl){ progressEl.style.display = 'block'; progressEl.textContent = `${label} 이미지를 읽는 중...`; }
   const objectUrl = URL.createObjectURL(file);
   try{
     const { data } = await Tesseract.recognize(objectUrl, 'kor+eng', {
       logger(m){
-        if(m.status === 'recognizing text' && typeof m.progress === 'number'){
-          cardScanProgress.textContent = `텍스트 인식 중... ${Math.round(m.progress * 100)}%`;
+        if(m.status === 'recognizing text' && typeof m.progress === 'number' && progressEl){
+          progressEl.textContent = `${label} 인식 중... ${Math.round(m.progress * 100)}%`;
         }
       }
     });
-    const parsed = parseBusinessCardText(data.text || '');
-    closeCardScan();
-    openAddCompanyModal('', parsed);
+    const parsed = kind === 'card' ? parseBusinessCardText(data.text || '') : parseBizRegText(data.text || '');
+    mergeOcrResult(parsed);
+    openAddCompanyModal('', pendingOcrData);
   } catch(err){
     console.error(err);
-    showToast('명함 인식에 실패했습니다. 직접 입력해주세요');
+    showToast(`${label} 인식에 실패했습니다. 직접 입력해주세요`);
   } finally {
-    URL.revokeObjectURL(objectUrl); // 명함 원본 이미지는 인식 후 즉시 폐기 (저장하지 않음)
-    cardScanProgress.style.display = 'none';
+    URL.revokeObjectURL(objectUrl); // 원본 이미지는 인식 후 즉시 폐기 (저장하지 않음)
+    if(progressEl) progressEl.style.display = 'none';
   }
 }
 
@@ -1137,9 +1140,11 @@ function computeCompanyMatches(query){
 function renderCompanyPanel(company){
   const infoRows = [
     ['담당자', company.contactName],
+    ['대표자', company.repName],
     ['전화번호', company.phone],
     ['팩스번호', company.fax],
     ['이메일', company.email],
+    ['사업자등록번호', company.bizRegNo],
     ['주소', company.address]
   ];
   return `
@@ -1212,14 +1217,16 @@ function updateCompanySearchUI(){
 function openAddCompanyModal(prefillName, ocrResult){
   const pre = ocrResult || {};
   openModal({
-    title: ocrResult ? '명함 인식 결과 확인 후 등록' : '업체 등록',
+    title: ocrResult ? '명함·사업자등록증 인식 결과 확인 후 등록' : '업체 등록',
     submitLabel:'등록',
     fields:[
       {name:'name', label:'시공사명', value: prefillName || pre.name || '', placeholder:'예: 동신도장'},
       {name:'contactName', label:'담당자 이름', value: pre.contactName || '', placeholder:'예: 홍길동 과장'},
+      {name:'repName', label:'대표자', value: pre.repName || '', placeholder:'예: 홍길동'},
       {name:'phone', label:'전화번호', value: pre.phone || '', placeholder:'예: 010-1234-5678'},
       {name:'fax', label:'팩스번호', value: pre.fax || '', placeholder:'예: 02-123-4567'},
       {name:'email', label:'이메일', value: pre.email || '', placeholder:'예: name@company.com'},
+      {name:'bizRegNo', label:'사업자등록번호', value: pre.bizRegNo || '', placeholder:'예: 123-45-67890'},
       {name:'address', label:'주소', value: pre.address || '', placeholder:'예: 서울시 ...'}
     ],
     onSubmit(data){
@@ -1230,10 +1237,12 @@ function openAddCompanyModal(prefillName, ocrResult){
       }
       state.companies.push({
         id:uid(), name,
-        contactName: data.contactName || '', phone: data.phone || '', fax: data.fax || '',
-        email: data.email || '', address: data.address || '', memo: ''
+        contactName: data.contactName || '', repName: data.repName || '',
+        phone: data.phone || '', fax: data.fax || '', email: data.email || '',
+        bizRegNo: data.bizRegNo || '', address: data.address || '', memo: ''
       });
       companySearchQuery = name;
+      pendingOcrData = {}; // 등록 완료 후 다음 스캔을 위해 초기화
       saveState(); render();
     }
   });
@@ -1247,9 +1256,11 @@ function openEditCompanyModal(companyId){
     fields:[
       {name:'name', label:'시공사명', value: c.name},
       {name:'contactName', label:'담당자 이름', value: c.contactName || ''},
+      {name:'repName', label:'대표자', value: c.repName || ''},
       {name:'phone', label:'전화번호', value: c.phone || ''},
       {name:'fax', label:'팩스번호', value: c.fax || ''},
       {name:'email', label:'이메일', value: c.email || ''},
+      {name:'bizRegNo', label:'사업자등록번호', value: c.bizRegNo || ''},
       {name:'address', label:'주소', value: c.address || ''}
     ],
     onSubmit(data){
@@ -1260,9 +1271,11 @@ function openEditCompanyModal(companyId){
       }
       c.name = name;
       c.contactName = data.contactName || '';
+      c.repName = data.repName || '';
       c.phone = data.phone || '';
       c.fax = data.fax || '';
       c.email = data.email || '';
+      c.bizRegNo = data.bizRegNo || '';
       c.address = data.address || '';
       companySearchQuery = name;
       saveState(); render();
@@ -1273,13 +1286,32 @@ function openEditCompanyModal(companyId){
 function renderCompaniesView(){
   const suggestHtml = companySuggestHTML(companySearchQuery);
   return `
-    <div class="view-topbar">
-      <span class="crumb">TOOLS</span>
-      <span class="right"><button class="fab-add" style="margin:0;" data-action="company-scan-open">📷 명함 스캔</button></span>
-    </div>
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
     <div class="view-header">
       <h1>🏢 업체 관리</h1>
       <p>업체명을 검색하면 담당자·연락처·메모가 자동으로 표시됩니다. 입력 내용은 즉시 저장되어 다음에도 그대로 유지됩니다.</p>
+    </div>
+    <div class="card">
+      <div class="attach-grid">
+        <div>
+          <div class="attach-zone-label">① 명함 첨부</div>
+          <div class="attach-drop" data-attach-kind="card">
+            <span class="attach-drop-btn">파일 선택</span>
+            <span>또는 드래그 앤 드롭</span>
+          </div>
+          <input type="file" id="cardAttachInput" accept="image/*" hidden />
+        </div>
+        <div>
+          <div class="attach-zone-label">② 사업자등록증 첨부</div>
+          <div class="attach-drop" data-attach-kind="bizreg">
+            <span class="attach-drop-btn">파일 선택</span>
+            <span>또는 드래그 앤 드롭</span>
+          </div>
+          <input type="file" id="bizAttachInput" accept="image/*" hidden />
+        </div>
+      </div>
+      <div class="attach-hint">첨부한 이미지는 저장되지 않고, 인식된 정보만 저장됩니다. 두 가지를 모두 첨부하면 정보가 합쳐지며, 겹치는 항목은 최근에 첨부한 내용으로 갱신됩니다.</div>
+      <div class="attach-progress" id="attachProgress" style="display:none;"></div>
     </div>
     <div class="card">
       <div style="display:flex;gap:10px;align-items:flex-start;">
@@ -1449,11 +1481,46 @@ contentEl.addEventListener('click', (e)=>{
     }
   }
   else if(action === 'company-add-open'){
+    pendingOcrData = {}; // 수동 등록은 이전에 첨부해두고 취소했던 OCR 결과를 이어받지 않음
     openAddCompanyModal(companySearchQuery);
   }
-  else if(action === 'company-scan-open'){
-    openCardScan();
+});
+
+/* 업체 관리: 명함/사업자등록증 첨부 영역 (클릭으로 파일 선택 + 드래그 앤 드롭) */
+contentEl.addEventListener('click', (e)=>{
+  const zone = e.target.closest('[data-attach-kind]');
+  if(!zone) return;
+  const input = document.getElementById(zone.dataset.attachKind === 'card' ? 'cardAttachInput' : 'bizAttachInput');
+  if(input) input.click();
+});
+contentEl.addEventListener('change', (e)=>{
+  if(e.target && e.target.id === 'cardAttachInput'){
+    const file = e.target.files && e.target.files[0];
+    if(file) handleAttachImage(file, 'card');
+    e.target.value = '';
+  } else if(e.target && e.target.id === 'bizAttachInput'){
+    const file = e.target.files && e.target.files[0];
+    if(file) handleAttachImage(file, 'bizreg');
+    e.target.value = '';
   }
+});
+contentEl.addEventListener('dragover', (e)=>{
+  const zone = e.target.closest('[data-attach-kind]');
+  if(!zone) return;
+  e.preventDefault();
+  zone.classList.add('drag');
+});
+contentEl.addEventListener('dragleave', (e)=>{
+  const zone = e.target.closest('[data-attach-kind]');
+  if(zone) zone.classList.remove('drag');
+});
+contentEl.addEventListener('drop', (e)=>{
+  const zone = e.target.closest('[data-attach-kind]');
+  if(!zone) return;
+  e.preventDefault();
+  zone.classList.remove('drag');
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(file) handleAttachImage(file, zone.dataset.attachKind);
 });
 
 contentEl.addEventListener('input', (e)=>{
@@ -1500,7 +1567,7 @@ function buildSearchIndex(){
   state.phrases.forEach(p => idx.push({ id:`phrase-${p.id}`, view:{type:'phrases'}, chap:'자주 쓰는 멘트', text: `${p.title} ${p.body}` }));
   state.companies.forEach(c => idx.push({
     id:`company-${c.id}`, view:{type:'companies', companyId:c.id}, chap:'업체 관리',
-    text: [c.name, c.contactName, c.phone, c.fax, c.email, c.address, c.memo].filter(Boolean).join(' ')
+    text: [c.name, c.contactName, c.repName, c.phone, c.fax, c.email, c.bizRegNo, c.address, c.memo].filter(Boolean).join(' ')
   }));
   return idx;
 }
