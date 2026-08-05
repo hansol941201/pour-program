@@ -233,20 +233,20 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  /* Top bar: global search + quicklinks + vault lock + note */
+  /* Top bar: quicklinks(왼쪽) + note/lock + 작은 검색창(오른쪽 끝) */
   .topbar{
     position:sticky;top:0;z-index:90;background:#fff;border-bottom:1px solid var(--card-border);
     padding:16px 28px;
   }
-  .topbar-inner{display:flex;align-items:center;gap:28px;}
-  .search-wrap{position:relative;flex:0 0 47%;max-width:47%;}
+  .topbar-inner{display:flex;align-items:center;gap:20px;}
+  .search-wrap{position:relative;flex:0 0 200px;width:200px;}
   .search-box{
-    width:100%;height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--card-border);
-    font-size:14px;font-family:inherit;background:#f8f9fb;color:var(--text-dark);
+    width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);
+    font-size:13.5px;font-family:inherit;background:#f8f9fb;color:var(--text-dark);
   }
   .search-box:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px #e6fbf8;}
   .search-results{
-    position:absolute;top:calc(100% + 8px);left:0;right:0;background:#fff;border:1px solid var(--card-border);
+    position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:80vw;background:#fff;border:1px solid var(--card-border);
     border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.14);z-index:120;display:none;overflow:hidden;max-height:420px;
   }
   .search-results.open{display:block;}
@@ -262,13 +262,14 @@
   .search-hit{animation:searchHit 1.7s ease;}
   @keyframes searchHit{0%,15%{box-shadow:0 0 0 4px #ffe600;} 100%{box-shadow:0 0 0 4px rgba(255,230,0,0);}}
 
-  /* Quicklinks: always 6 fixed slots, 3-col grid */
-  .quicklinks-panel{flex:1;min-width:0;}
+  /* Quicklinks: 왼쪽부터 가로 한 줄 정렬 (필요 시 가로 스크롤) */
+  .quicklinks-panel{flex:1;min-width:0;overflow:hidden;}
   .quicklinks-grid{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:8px 10px;
+    display:flex;align-items:center;gap:8px;overflow-x:auto;padding-bottom:2px;
   }
+  .quicklinks-grid::-webkit-scrollbar{height:4px;}
   .qlink-slot{
-    height:42px;border-radius:10px;font-size:12.5px;font-weight:600;
+    flex:none;height:40px;border-radius:10px;font-size:12.5px;font-weight:600;white-space:nowrap;
   }
   .qlink-slot.filled{
     position:relative;background:#fff;border:1px solid var(--card-border);
@@ -276,12 +277,12 @@
   }
   .qlink-slot.filled:hover{border-color:var(--navy);}
   .qlink-main{
-    flex:1;display:flex;align-items:center;gap:8px;padding:0 10px;min-width:0;
+    display:flex;align-items:center;gap:8px;padding:0 12px;min-width:0;
     color:var(--text-dark);text-decoration:none;
   }
   .qlink-icon{
-    flex:0 0 22px;width:22px;height:22px;border-radius:6px;background:var(--navy-soft);color:var(--navy);
-    font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
+    flex:0 0 20px;width:20px;height:20px;border-radius:6px;background:var(--navy-soft);color:var(--navy);
+    font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;
   }
   .qlink-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .qlink-slot .qdel{
@@ -291,7 +292,7 @@
   .qlink-slot .qdel:hover{color:var(--danger);}
   .qlink-slot.empty{
     background:#f7f9fc;border:1px dashed var(--card-border);color:var(--text-light-gray);
-    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0 14px;
   }
   .qlink-slot.empty:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-soft);}
 
@@ -349,10 +350,11 @@
     .sidebar.open{transform:translateX(0);}
     .content{padding:20px;}
     .topbar{padding:12px 16px;}
-    .topbar-inner{flex-wrap:wrap;gap:12px;}
-    .search-wrap{max-width:none;flex:1 1 100%;}
-    .quicklinks-panel{flex:1 1 100%;order:3;}
-    .top-actions{order:2;margin-left:auto;}
+    .topbar-inner{flex-wrap:wrap;gap:10px;}
+    .quicklinks-panel{flex:1 1 100%;order:1;}
+    .top-actions{order:2;}
+    .search-wrap{flex:1 1 auto;width:auto;order:3;margin-left:auto;}
+    .search-results{left:0;right:0;width:auto;max-width:none;}
     .note-panel{width:100%;max-width:100%;}
   }
 </style>
@@ -360,16 +362,16 @@
 <body>
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="search-wrap">
-      <input type="text" id="globalSearch" class="search-box" placeholder="🔍 무엇이든 검색해보세요 (가이드·할 일·사이트·멘트)" autocomplete="off" />
-      <div class="search-results" id="searchResults"></div>
-    </div>
     <div class="quicklinks-panel">
       <div class="quicklinks-grid" id="quickLinks"></div>
     </div>
     <div class="top-actions">
       <button class="top-icon-btn" id="noteBtn" title="할 일 목록">📝<span class="badge-dot" id="todoBadge">0</span></button>
       <button class="top-icon-btn" id="lockBtn" title="계정 정보">🔒</button>
+    </div>
+    <div class="search-wrap">
+      <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
+      <div class="search-results" id="searchResults"></div>
     </div>
   </div>
 </div>
@@ -1091,9 +1093,56 @@ function snippet(text, q){
 }
 const searchBox = document.getElementById('globalSearch');
 const searchResults = document.getElementById('searchResults');
+
+function openCompanyChecklist(companyId){
+  const c = state.companies.find(c=>c.id===companyId);
+  if(!c) return;
+  companySearchQuery = c.name;
+  state.currentView = {type:'companies'};
+  saveState(); render();
+  setTimeout(() => {
+    const target = document.querySelector(`[data-entry="company-${c.id}"]`);
+    if(target){
+      target.scrollIntoView({block:'center'});
+      target.classList.add('search-hit');
+      setTimeout(()=>target.classList.remove('search-hit'), 1700);
+    }
+  }, 60);
+}
+
+/* 입력 중: 업체명 자동완성만 가볍게 보여준다 */
+function runQuickCompanyAutocomplete(){
+  const q = searchBox.value.trim();
+  if(!q){ searchResults.classList.remove('open'); searchResults.innerHTML=''; return; }
+  const matches = state.companies.filter(c => c.name.toLowerCase().includes(q.toLowerCase())).slice(0,8);
+  if(!matches.length){ searchResults.classList.remove('open'); searchResults.innerHTML=''; return; }
+  searchResults.innerHTML = `<div class="sr-head">🏢 업체 자동완성</div><div class="sr-list"></div>`;
+  const list = searchResults.querySelector('.sr-list');
+  matches.forEach(c => {
+    const item = document.createElement('div');
+    item.className = 'sr-item';
+    item.innerHTML = `<div class="sr-text">🏢 ${escapeHtml(c.name)}</div>`;
+    item.addEventListener('click', () => {
+      searchResults.classList.remove('open');
+      searchBox.value = '';
+      openCompanyChecklist(c.id);
+    });
+    list.appendChild(item);
+  });
+  searchResults.classList.add('open');
+}
+
+/* Enter: 업체명·아파트명·키워드 전체 검색. 업체와 정확히 일치하면 체크리스트를 바로 표시 */
 function runSearch(){
   const q = searchBox.value.trim();
   if(!q){ searchResults.classList.remove('open'); searchResults.innerHTML=''; return; }
+  const exactCompany = state.companies.find(c => c.name.toLowerCase() === q.toLowerCase());
+  if(exactCompany){
+    searchResults.classList.remove('open'); searchResults.innerHTML='';
+    searchBox.value = '';
+    openCompanyChecklist(exactCompany.id);
+    return;
+  }
   const hits = buildSearchIndex().filter(x => x.text.toLowerCase().includes(q.toLowerCase()));
   if(!hits.length){
     searchResults.innerHTML = '<div class="sr-empty">검색 결과가 없습니다.</div>';
@@ -1128,18 +1177,7 @@ function runSearch(){
         return;
       }
       if(h.view.type === 'companies'){
-        const c = state.companies.find(c=>c.id===h.view.companyId);
-        if(c) companySearchQuery = c.name;
-        state.currentView = {type:'companies'};
-        saveState(); render();
-        setTimeout(() => {
-          const target = document.querySelector(`[data-entry="${h.id}"]`);
-          if(target){
-            target.scrollIntoView({block:'center'});
-            target.classList.add('search-hit');
-            setTimeout(()=>target.classList.remove('search-hit'), 1700);
-          }
-        }, 60);
+        openCompanyChecklist(h.view.companyId);
         return;
       }
       state.currentView = h.view;
@@ -1157,9 +1195,12 @@ function runSearch(){
   });
   searchResults.classList.add('open');
 }
-searchBox.addEventListener('input', runSearch);
-searchBox.addEventListener('focus', () => { if(searchBox.value.trim()) runSearch(); });
-searchBox.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ searchResults.classList.remove('open'); searchBox.blur(); } });
+searchBox.addEventListener('input', runQuickCompanyAutocomplete);
+searchBox.addEventListener('focus', () => { if(searchBox.value.trim()) runQuickCompanyAutocomplete(); });
+searchBox.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){ e.preventDefault(); runSearch(); }
+  else if(e.key === 'Escape'){ searchResults.classList.remove('open'); searchBox.blur(); }
+});
 document.addEventListener('click', (e) => { if(!e.target.closest('.search-wrap')) searchResults.classList.remove('open'); });
 document.addEventListener('click', (e) => {
   if(!e.target.closest('#companySearchInput') && !e.target.closest('#companySearchSuggest')){
@@ -1247,22 +1288,17 @@ function openAddQuickLinkModal(){
   });
 }
 function renderQuickLinks(){
-  let html = '';
-  for(let i=0; i<MAX_QUICKLINKS; i++){
-    const l = state.links[i];
-    if(l){
-      html += `
-        <div class="qlink-slot filled" data-entry="link-${l.id}">
-          <a class="qlink-main" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
-            <span class="qlink-icon">${escapeHtml((l.title||'?').trim().charAt(0).toUpperCase() || '#')}</span>
-            <span class="qlink-title">${escapeHtml(l.title)}</span>
-          </a>
-          <button class="qdel" data-action="qlink-delete" data-id="${l.id}" title="삭제">✕</button>
-        </div>
-      `;
-    } else {
-      html += `<button type="button" class="qlink-slot empty" data-action="qlink-add-slot">+ 사이트 추가</button>`;
-    }
+  let html = state.links.map(l => `
+    <div class="qlink-slot filled" data-entry="link-${l.id}">
+      <a class="qlink-main" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
+        <span class="qlink-icon">${escapeHtml((l.title||'?').trim().charAt(0).toUpperCase() || '#')}</span>
+        <span class="qlink-title">${escapeHtml(l.title)}</span>
+      </a>
+      <button class="qdel" data-action="qlink-delete" data-id="${l.id}" title="삭제">✕</button>
+    </div>
+  `).join('');
+  if(state.links.length < MAX_QUICKLINKS){
+    html += `<button type="button" class="qlink-slot empty" data-action="qlink-add-slot">+ 바로가기</button>`;
   }
   quickLinksEl.innerHTML = html;
 }
