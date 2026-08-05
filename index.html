@@ -176,16 +176,23 @@
   }
   .step-phone-toggle:hover{border-color:var(--navy);color:var(--navy);}
 
-  /* 전화 메모 패널: 저장 버튼 없이 입력 즉시 자동 저장 */
-  .phone-note-modal{max-width:420px;}
-  .phone-note-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
-  .phone-note-head h2{margin:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .phone-note-textarea{
-    width:100%;min-height:220px;padding:10px 12px;border-radius:8px;border:1px solid var(--card-border);
-    font-size:14px;font-family:inherit;resize:vertical;
+  /* 전화 메모: 배경 오버레이 없는 작은 말풍선(Popover). 저장 버튼 없이 입력 즉시 자동 저장 */
+  .phone-popover{
+    display:none;position:fixed;width:340px;background:#fff;border:1px solid #e3e6ec;border-radius:6px;
+    box-shadow:0 10px 28px rgba(20,30,50,.14);padding:14px;z-index:160;
   }
-  .phone-note-textarea:focus{outline:none;border-color:var(--accent);}
-  .phone-note-hint{font-size:11px;color:var(--text-light-gray);margin-top:8px;}
+  .phone-popover.open{display:block;}
+  .phone-popover-arrow{
+    position:absolute;top:-7px;left:20px;width:12px;height:12px;background:#fff;
+    border-left:1px solid #e3e6ec;border-top:1px solid #e3e6ec;transform:rotate(45deg);
+  }
+  .phone-popover-head{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .phone-popover-textarea{
+    width:100%;min-height:190px;max-height:420px;padding:9px 11px;border-radius:6px;border:1px solid var(--card-border);
+    font-size:13.5px;font-family:inherit;line-height:1.55;resize:vertical;
+  }
+  .phone-popover-textarea:focus{outline:none;border-color:var(--accent);}
+  .phone-popover-hint{font-size:10.5px;color:var(--text-light-gray);margin-top:7px;}
 
   .card{
     background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;
@@ -545,15 +552,11 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="phoneNoteOverlay">
-  <div class="modal phone-note-modal">
-    <div class="phone-note-head">
-      <h2 id="phoneNoteTitle">📞 전화 메모</h2>
-      <button class="icon-btn" id="phoneNoteClose" title="닫기">✕</button>
-    </div>
-    <textarea id="phoneNoteTextarea" class="phone-note-textarea" placeholder="통화 중/통화 후 메모를 자유롭게 입력하세요"></textarea>
-    <div class="phone-note-hint">입력 즉시 자동 저장됩니다</div>
-  </div>
+<div class="phone-popover" id="phoneNotePopover">
+  <div class="phone-popover-arrow"></div>
+  <div class="phone-popover-head" id="phoneNoteTitle">📞 전화 메모</div>
+  <textarea id="phoneNoteTextarea" class="phone-popover-textarea" placeholder="통화 중/통화 후 메모를 자유롭게 입력하세요"></textarea>
+  <div class="phone-popover-hint">입력 즉시 자동 저장됩니다</div>
 </div>
 
 <div class="modal-overlay" id="cardScanOverlay">
@@ -709,34 +712,67 @@ function escapeHtml(str){
   return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---------- 전화 메모 (워크플로우 단계 전용, 저장 버튼 없이 자동 저장) ---------- */
+/* ---------- 전화 메모 (워크플로우 단계 전용, 배경 오버레이 없는 말풍선 Popover) ---------- */
 let currentPhoneNote = null; // {guideId, stepId}
-const phoneNoteOverlay = document.getElementById('phoneNoteOverlay');
+let currentPhoneBtn = null; // 현재 열려있는 📞 버튼 엘리먼트 (재클릭 시 닫기 위해 기억)
+const phoneNotePopover = document.getElementById('phoneNotePopover');
+const phoneNoteArrow = phoneNotePopover.querySelector('.phone-popover-arrow');
 const phoneNoteTitle = document.getElementById('phoneNoteTitle');
 const phoneNoteTextarea = document.getElementById('phoneNoteTextarea');
 
-function openPhoneNote(guideId, stepId){
+function positionPhonePopover(btnEl){
+  const rect = btnEl.getBoundingClientRect();
+  const popW = phoneNotePopover.offsetWidth || 340;
+  const margin = 12;
+  let left = rect.left + rect.width / 2 - popW / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - popW - margin));
+  const top = rect.bottom + 10;
+  phoneNotePopover.style.left = left + 'px';
+  phoneNotePopover.style.top = top + 'px';
+  const arrowLeft = Math.max(14, Math.min(rect.left + rect.width / 2 - left - 6, popW - 26));
+  phoneNoteArrow.style.left = arrowLeft + 'px';
+}
+function openPhoneNote(guideId, stepId, btnEl){
+  // 같은 버튼을 다시 누르면 닫기
+  if(currentPhoneBtn === btnEl && phoneNotePopover.classList.contains('open')){
+    closePhoneNote();
+    return;
+  }
   const guide = state.guides.find(g=>g.id===guideId);
   const step = guide && guide.steps.find(s=>s.id===stepId);
   if(!step) return;
   currentPhoneNote = {guideId, stepId};
+  currentPhoneBtn = btnEl;
   phoneNoteTitle.textContent = `📞 ${step.label}`;
   phoneNoteTextarea.value = step.phoneNote || '';
-  phoneNoteOverlay.classList.add('open');
+  positionPhonePopover(btnEl);
+  phoneNotePopover.classList.add('open');
   phoneNoteTextarea.focus();
 }
 function closePhoneNote(){
-  phoneNoteOverlay.classList.remove('open');
+  phoneNotePopover.classList.remove('open');
   currentPhoneNote = null;
+  currentPhoneBtn = null;
 }
-document.getElementById('phoneNoteClose').addEventListener('click', closePhoneNote);
-phoneNoteOverlay.addEventListener('click', (e)=>{ if(e.target.id === 'phoneNoteOverlay') closePhoneNote(); });
 phoneNoteTextarea.addEventListener('input', (e)=>{
   if(!currentPhoneNote) return;
   const guide = state.guides.find(g=>g.id===currentPhoneNote.guideId);
   const step = guide && guide.steps.find(s=>s.id===currentPhoneNote.stepId);
   if(step){ step.phoneNote = e.target.value; saveState(); }
 });
+// 바깥 클릭 시 닫기 (📞 버튼 자신의 클릭은 위 토글 로직에서 처리하므로 제외)
+document.addEventListener('click', (e)=>{
+  if(!phoneNotePopover.classList.contains('open')) return;
+  if(e.target.closest('.phone-popover') || e.target.closest('.step-phone-btn')) return;
+  closePhoneNote();
+});
+// ESC 키로 닫기
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Escape' && phoneNotePopover.classList.contains('open')) closePhoneNote();
+});
+// 스크롤/리사이즈 시 위치가 어긋나지 않도록 닫기
+window.addEventListener('scroll', ()=>{ if(phoneNotePopover.classList.contains('open')) closePhoneNote(); }, true);
+window.addEventListener('resize', ()=>{ if(phoneNotePopover.classList.contains('open')) closePhoneNote(); });
 
 /* ---------- 명함 스캔(OCR): 이미지는 저장하지 않고 인식 결과만 업체 등록 폼에 채워넣는다 ---------- */
 const cardScanOverlay = document.getElementById('cardScanOverlay');
@@ -1250,7 +1286,7 @@ contentEl.addEventListener('click', (e)=>{
     if(step){ step.hasPhone = !step.hasPhone; saveState(); render(); }
   }
   else if(action === 'step-phone-open'){
-    openPhoneNote(guide.id, btn.dataset.step);
+    openPhoneNote(guide.id, btn.dataset.step, btn);
   }
   else if(action === 'block-add'){
     openModal({
