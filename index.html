@@ -119,12 +119,17 @@
   }
   .ai-note-textarea::placeholder{color:var(--sb-text-faint);}
   .ai-note-textarea:focus{outline:none;border-color:var(--sb-navy);}
-  .ai-note-btn{
-    background:var(--sb-navy);color:#fff;border:none;border-radius:4px;padding:10px 12px;
-    font-weight:700;font-size:13px;cursor:pointer;
+  .ai-note-input-wrap{position:relative;}
+  .ai-note-status{
+    position:absolute;right:8px;bottom:8px;font-size:10.5px;font-weight:600;color:var(--sb-navy);
+    background:#fff;padding:2px 6px;border-radius:4px;pointer-events:none;
+    display:flex;align-items:center;gap:5px;
   }
-  .ai-note-btn:hover{background:var(--sb-navy-dark);}
-  .ai-note-btn:disabled{opacity:.6;cursor:default;}
+  .ai-note-status .spin{
+    width:9px;height:9px;border-radius:50%;border:2px solid var(--sb-border);border-top-color:var(--sb-navy);
+    animation:aiSpin .7s linear infinite;
+  }
+  @keyframes aiSpin{to{transform:rotate(360deg);}}
 
   /* Content */
   .content{flex:1;padding:36px 44px;min-width:0;}
@@ -502,9 +507,11 @@
         <div class="ai-note-label">✨ AI 업무비서</div>
         <button type="button" class="ai-note-settings-btn" id="aiSettingsBtn" title="API 키 설정">⚙️</button>
       </div>
-      <textarea id="aiNoteInput" class="ai-note-textarea" rows="4"
-        placeholder="예: 메일 실적 보내요 / 카카오톡 협약 감사합니다 / 전화보고 동신도장 전화옴"></textarea>
-      <button type="button" class="ai-note-btn" id="aiRewriteBtn">✨ AI 문구 수정</button>
+      <div class="ai-note-input-wrap">
+        <textarea id="aiNoteInput" class="ai-note-textarea" rows="4"
+          placeholder="예: 메일 실적 보내요 / 카카오톡 협약 감사합니다 / 전화보고 동신도장 전화옴&#10;(Enter로 실행 · Shift+Enter로 줄바꿈)"></textarea>
+        <span class="ai-note-status" id="aiNoteStatus" style="display:none;">문구 수정 중...</span>
+      </div>
     </div>
   </aside>
 
@@ -1884,41 +1891,54 @@ async function callOpenAI(apiKey, prompt){
   return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
 }
 
+let aiRewriteInFlight = false;
+
 async function runAiRewrite(apiKey, text){
   const input = document.getElementById('aiNoteInput');
-  const btn = document.getElementById('aiRewriteBtn');
+  const status = document.getElementById('aiNoteStatus');
   const { type, rest } = detectNoteType(text);
   const prompt = buildAiPrompt(type, rest || text);
-  const originalLabel = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '✨ 생성 중...';
+  aiRewriteInFlight = true;
+  input.disabled = true;
+  status.innerHTML = '<span class="spin"></span>문구 수정 중...';
+  status.style.display = 'flex';
   try{
     const result = await callOpenAI(apiKey, prompt);
     if(result){
       input.value = result;
-      showToast('AI가 문구를 수정했습니다');
     } else {
       showToast('AI 응답이 비어있습니다');
     }
   } catch(err){
     console.error(err);
-    showToast('AI 요청에 실패했습니다');
+    showToast('문구 수정에 실패했습니다.');
   } finally {
-    btn.disabled = false;
-    btn.textContent = originalLabel;
+    aiRewriteInFlight = false;
+    input.disabled = false;
+    status.style.display = 'none';
+    input.focus();
   }
 }
 
-document.getElementById('aiRewriteBtn').addEventListener('click', ()=>{
+function triggerAiRewrite(){
+  if(aiRewriteInFlight) return;
   const input = document.getElementById('aiNoteInput');
   const text = input.value.trim();
-  if(!text){ showToast('내용을 입력해주세요'); return; }
+  if(!text) return;
   const apiKey = getOpenAIKey();
   if(!apiKey){
     promptForOpenAIKey((key)=> runAiRewrite(key, text));
     return;
   }
   runAiRewrite(apiKey, text);
+}
+
+// ChatGPT처럼: Enter = 즉시 실행, Shift+Enter = 줄바꿈
+document.getElementById('aiNoteInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    triggerAiRewrite();
+  }
 });
 
 /* ---------- Init ---------- */
