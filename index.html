@@ -404,6 +404,7 @@
       <div class="nav-label">TOOLS</div>
       <ul class="nav-list">
         <li class="nav-item" data-view="phrases">💬 <span class="label">자주 쓰는 멘트</span></li>
+        <li class="nav-item" data-view="companies">🏢 <span class="label">업체 관리</span></li>
       </ul>
     </div>
 
@@ -462,6 +463,16 @@ const STORAGE_KEY = 'work-guide-state-v1';
 
 function uid(){ return Math.random().toString(36).slice(2,10); }
 
+/* 업체 관리: 신규 업체 등록 시 자동 생성되는 기본 체크리스트 */
+const DEFAULT_CHECKLIST_LABELS = [
+  '명함','로고','1차 메일 발송','1차 메일 회신 확인 전화','사업자등록증','질문서','계정 생성',
+  '협약서','샘플 발송','현장등록','공법설명회','PT','CAD','컨설팅','공고문 확인','입찰','계약',
+  '공사 시작','완료'
+];
+function createChecklist(){
+  return DEFAULT_CHECKLIST_LABELS.map(label => ({id:uid(), label, done:false}));
+}
+
 const DEFAULT_STATE = {
   brand: { title: 'MY WORK' },
   guides: [
@@ -495,6 +506,9 @@ const DEFAULT_STATE = {
   credentials:[
     {id:uid(), site:'예시 사이트', username:'my_id', password:'my_password'}
   ],
+  companies:[
+    {id:uid(), name:'예시 업체', checklist:createChecklist()}
+  ],
   currentView:{type:'guide', id:'g1'}
 };
 
@@ -505,6 +519,7 @@ function loadState(){
       const parsed = JSON.parse(raw);
       // 이전 버전 데이터 호환: 새로 추가된 필드가 없으면 채워줌
       if(!parsed.credentials) parsed.credentials = [];
+      if(!parsed.companies) parsed.companies = [];
       return parsed;
     }
   }catch(e){}
@@ -513,6 +528,7 @@ function loadState(){
 function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
 let state = loadState();
+let companySearchQuery = ''; // 업체 검색어(임시 상태, localStorage에는 저장하지 않음)
 
 /* ---------- Toast & Copy ---------- */
 function showToast(msg){
@@ -652,6 +668,8 @@ function renderContent(){
     el.innerHTML = renderGuideView(state.guides.find(g=>g.id===state.currentView.id));
   } else if(state.currentView.type === 'phrases'){
     el.innerHTML = renderPhrasesView();
+  } else if(state.currentView.type === 'companies'){
+    el.innerHTML = renderCompaniesView();
   } else {
     // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 첫 가이드로 이동
     // 할 일 목록은 상단 📝 노트 패널로 이동했습니다.
@@ -753,6 +771,125 @@ function renderPhrasesView(){
         <div class="card-body">${escapeHtml(p.body)}</div>
       </div>
     `).join('') || '<div class="empty-state">등록된 멘트가 없습니다</div>'}
+  `;
+}
+
+/* ---------- Render: 업체 관리 (회사 검색) ---------- */
+function computeCompanyMatches(query){
+  const q = (query || '').trim().toLowerCase();
+  if(!q) return { q:'', matches:[], exact:null };
+  const matches = state.companies.filter(c => c.name.toLowerCase().includes(q));
+  const exact = state.companies.find(c => c.name.toLowerCase() === q) || null;
+  return { q, matches, exact };
+}
+
+function renderCompanyPanel(company){
+  const doneCount = company.checklist.filter(i=>i.done).length;
+  return `
+    <div class="card highlight" data-entry="company-${company.id}">
+      <div class="card-head">
+        <div class="card-title" style="margin:0;">🏢 ${escapeHtml(company.name)}</div>
+        <div class="card-actions">
+          <span style="font-size:12px;font-weight:600;color:var(--text-gray);align-self:center;white-space:nowrap;">${doneCount} / ${company.checklist.length} 완료</span>
+          <button class="icon-btn danger" data-action="company-delete" data-id="${company.id}" title="업체 삭제">🗑</button>
+        </div>
+      </div>
+      <div>
+        ${company.checklist.map(item => `
+          <div class="todo-item ${item.done?'done':''}">
+            <input type="checkbox" ${item.done?'checked':''} data-action="company-check-toggle" data-company="${company.id}" data-item="${item.id}" id="cchk-${item.id}" />
+            <span>${escapeHtml(item.label)}</span>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderCompanyNotFound(query){
+  return `
+    <div class="card empty-state" style="padding:40px 20px;">
+      <div style="margin-bottom:14px;">"${escapeHtml(query)}" 등록되지 않은 업체입니다.</div>
+      <button type="button" class="fab-add" style="margin:0;" data-action="company-add-open">+ 업체 등록</button>
+    </div>
+  `;
+}
+
+function companyResultHTML(query){
+  const q = (query || '').trim();
+  if(!q) return `<div class="empty-state">업체명을 검색해보세요 (일부만 입력해도 자동완성됩니다)</div>`;
+  const { matches, exact } = computeCompanyMatches(q);
+  if(exact) return renderCompanyPanel(exact);
+  if(matches.length) return `<div class="empty-state">일치하는 업체가 ${matches.length}개 있습니다. 아래 목록에서 선택해주세요.</div>`;
+  return renderCompanyNotFound(q);
+}
+
+function companySuggestHTML(query){
+  const q = (query || '').trim();
+  if(!q) return '';
+  const { matches, exact } = computeCompanyMatches(q);
+  if(!matches.length) return '';
+  if(matches.length === 1 && exact) return '';
+  return matches.slice(0,8).map(c => `
+    <div class="sr-item" data-action="company-suggest-pick" data-id="${c.id}">
+      <div class="sr-text">🏢 ${escapeHtml(c.name)}</div>
+    </div>
+  `).join('');
+}
+
+function updateCompanySearchUI(){
+  const suggestEl = document.getElementById('companySearchSuggest');
+  const resultEl = document.getElementById('companyResultArea');
+  if(!suggestEl || !resultEl) return;
+  const suggestHtml = companySuggestHTML(companySearchQuery);
+  suggestEl.innerHTML = suggestHtml;
+  suggestEl.classList.toggle('open', !!suggestHtml);
+  resultEl.innerHTML = companyResultHTML(companySearchQuery);
+}
+
+function openAddCompanyModal(prefillName){
+  openModal({
+    title:'업체 등록', submitLabel:'등록',
+    fields:[{name:'name', label:'업체명', value: prefillName || '', placeholder:'예: 동신도장'}],
+    onSubmit(data){
+      const name = (data.name || '').trim();
+      if(!name) return;
+      if(state.companies.some(c => c.name.toLowerCase() === name.toLowerCase())){
+        showToast('이미 등록된 업체입니다'); return;
+      }
+      state.companies.push({id:uid(), name, checklist:createChecklist()});
+      companySearchQuery = name;
+      saveState(); render();
+    }
+  });
+}
+
+function renderCompaniesView(){
+  const suggestHtml = companySuggestHTML(companySearchQuery);
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>🏢 업체 관리</h1>
+      <p>업체명을 검색하면 체크리스트가 자동으로 표시됩니다. 체크 상태는 즉시 저장되어 다음에도 그대로 유지됩니다.</p>
+    </div>
+    <div class="card">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <div style="position:relative;flex:1;">
+          <input type="text" id="companySearchInput" class="search-box" placeholder="업체명을 입력하세요 (예: 동신도장)" autocomplete="off" value="${escapeHtml(companySearchQuery)}" />
+          <div class="search-results ${suggestHtml?'open':''}" id="companySearchSuggest">${suggestHtml}</div>
+        </div>
+        <button type="button" class="fab-add" style="margin:0;" data-action="company-add-open">+ 업체 등록</button>
+      </div>
+    </div>
+    <div id="companyResultArea">${companyResultHTML(companySearchQuery)}</div>
+    ${state.companies.length ? `
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">등록된 업체 (${state.companies.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${state.companies.map(c => `<button type="button" class="copy-btn" data-action="company-pick" data-id="${c.id}">🏢 ${escapeHtml(c.name)}</button>`).join('')}
+        </div>
+      </div>
+    ` : ''}
   `;
 }
 
@@ -870,6 +1007,38 @@ contentEl.addEventListener('click', (e)=>{
     const p = state.phrases.find(p=>p.id===btn.dataset.id);
     copyText(p.body);
   }
+  else if(action === 'company-pick' || action === 'company-suggest-pick'){
+    const c = state.companies.find(c=>c.id===btn.dataset.id);
+    if(c){
+      companySearchQuery = c.name;
+      const input = document.getElementById('companySearchInput');
+      if(input) input.value = c.name;
+      updateCompanySearchUI();
+    }
+  }
+  else if(action === 'company-check-toggle'){
+    const c = state.companies.find(c=>c.id===btn.dataset.company);
+    const item = c && c.checklist.find(i=>i.id===btn.dataset.item);
+    if(item){ item.done = !item.done; saveState(); updateCompanySearchUI(); }
+  }
+  else if(action === 'company-delete'){
+    const c = state.companies.find(c=>c.id===btn.dataset.id);
+    if(c && confirm(`"${c.name}" 업체를 삭제할까요?`)){
+      state.companies = state.companies.filter(x=>x.id!==c.id);
+      companySearchQuery = '';
+      saveState(); render();
+    }
+  }
+  else if(action === 'company-add-open'){
+    openAddCompanyModal(companySearchQuery);
+  }
+});
+
+contentEl.addEventListener('input', (e)=>{
+  if(e.target && e.target.id === 'companySearchInput'){
+    companySearchQuery = e.target.value;
+    updateCompanySearchUI();
+  }
 });
 
 contentEl.addEventListener('submit', (e)=>{
@@ -902,6 +1071,10 @@ function buildSearchIndex(){
   state.todos.forEach(t => idx.push({ id:`todo-${t.id}`, view:{type:'todos'}, chap:'할 일 목록', text: t.text }));
   state.links.forEach(l => idx.push({ id:`link-${l.id}`, view:{type:'openLink', url:l.url}, chap:'사이트 바로가기', text: `${l.title} ${l.url}` }));
   state.phrases.forEach(p => idx.push({ id:`phrase-${p.id}`, view:{type:'phrases'}, chap:'자주 쓰는 멘트', text: `${p.title} ${p.body}` }));
+  state.companies.forEach(c => idx.push({
+    id:`company-${c.id}`, view:{type:'companies', companyId:c.id}, chap:'업체 관리',
+    text: `${c.name} 업체 체크리스트 ${c.checklist.map(i=>i.label).join(' ')}`
+  }));
   return idx;
 }
 function snippet(text, q){
@@ -954,6 +1127,21 @@ function runSearch(){
         }, 60);
         return;
       }
+      if(h.view.type === 'companies'){
+        const c = state.companies.find(c=>c.id===h.view.companyId);
+        if(c) companySearchQuery = c.name;
+        state.currentView = {type:'companies'};
+        saveState(); render();
+        setTimeout(() => {
+          const target = document.querySelector(`[data-entry="${h.id}"]`);
+          if(target){
+            target.scrollIntoView({block:'center'});
+            target.classList.add('search-hit');
+            setTimeout(()=>target.classList.remove('search-hit'), 1700);
+          }
+        }, 60);
+        return;
+      }
       state.currentView = h.view;
       saveState(); render();
       setTimeout(() => {
@@ -973,6 +1161,12 @@ searchBox.addEventListener('input', runSearch);
 searchBox.addEventListener('focus', () => { if(searchBox.value.trim()) runSearch(); });
 searchBox.addEventListener('keydown', (e) => { if(e.key === 'Escape'){ searchResults.classList.remove('open'); searchBox.blur(); } });
 document.addEventListener('click', (e) => { if(!e.target.closest('.search-wrap')) searchResults.classList.remove('open'); });
+document.addEventListener('click', (e) => {
+  if(!e.target.closest('#companySearchInput') && !e.target.closest('#companySearchSuggest')){
+    const suggestEl = document.getElementById('companySearchSuggest');
+    if(suggestEl) suggestEl.classList.remove('open');
+  }
+});
 
 /* ---------- Vault (계정 정보) ---------- */
 const vaultOverlay = document.getElementById('vaultOverlay');
