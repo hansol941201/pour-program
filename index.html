@@ -138,6 +138,10 @@
   .content{flex:1;padding:36px 44px;min-width:0;}
   .view-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .view-topbar .crumb{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-gray);}
+  .crumb-group{display:inline-flex;align-items:center;gap:6px;}
+  .crumb-edit-btn{background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:11px;padding:2px;line-height:1;}
+  .crumb-edit-btn:hover{color:var(--accent);}
+  .crumb-edit-btn.danger:hover{color:var(--danger);}
   .view-topbar .right{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-light-gray);display:flex;align-items:center;gap:10px;}
   .icon-btn{
     background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;
@@ -315,13 +319,13 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  /* Top bar: quicklinks(왼쪽) + note/lock + 작은 검색창(오른쪽 끝) */
+  /* Top bar: quicklinks(왼쪽) + 검색창(가운데) + note/lock(오른쪽) */
   .topbar{
     position:sticky;top:0;z-index:90;background:#fff;border-bottom:1px solid var(--card-border);
     padding:16px 28px;
   }
-  .topbar-inner{display:flex;align-items:center;gap:20px;}
-  .search-wrap{position:relative;flex:0 0 200px;width:200px;}
+  .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;}
+  .search-wrap{position:relative;flex:0 0 200px;width:200px;justify-self:center;}
   .search-box{
     width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);
     font-size:13.5px;font-family:inherit;background:var(--bg);color:var(--text-dark);
@@ -391,7 +395,7 @@
   }
   .qlink-slot.empty:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-soft);}
 
-  .top-actions{display:flex;align-items:center;gap:8px;flex:none;}
+  .top-actions{display:flex;align-items:center;gap:8px;flex:none;justify-self:end;}
   .top-icon-btn{
     position:relative;width:42px;height:42px;flex:none;border-radius:10px;background:#fff;border:1px solid var(--card-border);
     font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
@@ -460,10 +464,10 @@
     .sidebar.open{transform:translateX(0);}
     .content{padding:20px;}
     .topbar{padding:12px 16px;}
-    .topbar-inner{flex-wrap:wrap;gap:10px;}
-    .quicklinks-panel{flex:1 1 100%;order:1;}
-    .top-actions{order:2;}
-    .search-wrap{flex:1 1 auto;width:auto;order:3;margin-left:auto;}
+    .topbar-inner{display:flex;flex-wrap:wrap;gap:10px;}
+    .quicklinks-panel{flex:1 1 auto;order:1;}
+    .top-actions{order:2;justify-self:auto;}
+    .search-wrap{flex:1 1 100%;width:auto;order:3;justify-self:auto;}
     .search-results{left:0;right:0;width:auto;max-width:none;}
     .note-panel{width:100%;max-width:100%;}
   }
@@ -1173,7 +1177,11 @@ function renderGuideView(g){
   if(!g) return `<div class="empty-state">가이드를 선택하거나 새로 추가해주세요.</div>`;
   return `
     <div class="view-topbar">
-      <span class="crumb">${escapeHtml(g.tag || 'WORKFLOW')}</span>
+      <span class="crumb-group">
+        <span class="crumb">${escapeHtml(g.tag || 'WORKFLOW')}</span>
+        <button class="crumb-edit-btn" data-action="tag-edit" data-guide="${g.id}" title="분류 태그 수정">✎</button>
+        <button class="crumb-edit-btn danger" data-action="tag-delete" data-guide="${g.id}" title="분류 태그 삭제">🗑</button>
+      </span>
       <span class="right">
         ${escapeHtml(g.rightLabel || '')}
         <button class="icon-btn" data-action="guide-edit" data-id="${g.id}" title="수정">✎</button>
@@ -1503,6 +1511,22 @@ contentEl.addEventListener('click', (e)=>{
       state.guides = state.guides.filter(g=>g.id!==guide.id);
       state.navOrder = state.navOrder.filter(e => !(e.kind === 'guide' && e.guideId === guide.id));
       state.currentView = state.guides[0] ? {type:'guide', id:state.guides[0].id} : {type:'phrases'};
+      saveState(); render();
+    }
+  }
+  else if(action === 'tag-edit'){
+    openModal({
+      title:'분류 태그 수정', submitLabel:'저장',
+      fields:[{name:'tag', label:'분류 태그', value: guide.tag || '', placeholder:'예: PARTNERSHIP WORKFLOW'}],
+      onSubmit(data){
+        guide.tag = data.tag || '';
+        saveState(); render();
+      }
+    });
+  }
+  else if(action === 'tag-delete'){
+    if(confirm('정말 삭제하시겠습니까?')){
+      guide.tag = '';
       saveState(); render();
     }
   }
