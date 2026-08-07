@@ -527,6 +527,8 @@
     color:var(--text-light-gray);cursor:not-allowed;background:var(--bg);
   }
   .worktools-btn.disabled:hover, .worktools-btn:disabled:hover{border-color:var(--card-border);color:var(--text-light-gray);}
+  .worktools-btn.active{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
+  .home-shortcuts-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
 
   /* 사이드바: 상단 우선순위 그룹(홈/전화 비서/오늘 업무) + 하단 업무도구 그룹 */
   .sidebar-primary-group{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
@@ -1830,6 +1832,14 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'tool-settings'){
     openAiSettingsModal();
   }
+  else if(action === 'tool-shortcuts'){
+    homeShortcutsOpen = !homeShortcutsOpen;
+    render();
+  }
+  else if(action === 'qlink-add-slot'){
+    // 홈 화면의 바로가기 패널에서도 사이드바와 동일한 기존 추가 기능을 재사용
+    openAddQuickLinkModal();
+  }
 });
 
 /* 업체 관리: 명함/사업자등록증 첨부 영역 (클릭으로 파일 선택 + 드래그 앤 드롭) */
@@ -2144,8 +2154,9 @@ function getQuickLinkIcon(title){
   }
   return { cls:'', style:'', html: escapeHtml(t.charAt(0).toUpperCase() || '#') };
 }
-/* 상단 바로가기: 고정 업무 런처 형태 — 삭제(X) 없이 클릭 시 바로 이동만 수행 */
-function renderQuickLinks(){
+/* 상단 바로가기: 고정 업무 런처 형태 — 삭제(X) 없이 클릭 시 바로 이동만 수행
+   (사이드바 목록과 홈 화면의 "바로가기" 접이식 패널이 동일한 마크업을 공유한다) */
+function quickLinksMarkup(){
   let html = state.links.map(l => {
     const icon = getQuickLinkIcon(l.title);
     return `
@@ -2160,7 +2171,10 @@ function renderQuickLinks(){
   if(state.links.length < MAX_QUICKLINKS){
     html += `<button type="button" class="qlink-slot empty" data-action="qlink-add-slot">+ 바로가기</button>`;
   }
-  quickLinksEl.innerHTML = html;
+  return html;
+}
+function renderQuickLinks(){
+  quickLinksEl.innerHTML = quickLinksMarkup();
 }
 quickLinksEl.addEventListener('click', (e)=>{
   const addBtn = e.target.closest('[data-action="qlink-add-slot"]');
@@ -2680,6 +2694,7 @@ function renderHomeView(){
   `;
 }
 
+let homeShortcutsOpen = false; // 홈 화면의 "바로가기" 접이식 패널 열림 상태(임시 UI 상태, 데이터는 아님)
 function renderWorkToolsRow(){
   return `
     <div class="worktools-row">
@@ -2689,7 +2704,9 @@ function renderWorkToolsRow(){
       <button type="button" class="worktools-btn" data-action="tool-manual">업무매뉴얼</button>
       <button type="button" class="worktools-btn" data-action="tool-vault">계정관리</button>
       <button type="button" class="worktools-btn" data-action="tool-settings">설정</button>
+      <button type="button" class="worktools-btn ${homeShortcutsOpen ? 'active' : ''}" data-action="tool-shortcuts">바로가기</button>
     </div>
+    ${homeShortcutsOpen ? `<div class="quicklinks-grid home-shortcuts-grid">${quickLinksMarkup()}</div>` : ''}
   `;
 }
 
