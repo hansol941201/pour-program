@@ -337,6 +337,28 @@
     font-size:13.5px;font-family:inherit;background:var(--bg);color:var(--text-dark);
   }
   .search-box:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--hover-blue-soft);}
+
+  /* 헤더 바로가기: 검색창 옆, 작은 텍스트 캡슐(아이콘 없음), 삭제(✕)는 평소 연하게·hover 시에만 진하게 */
+  .topbar-quicklinks{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .qlink-chip{
+    display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--card-border);
+    border-radius:999px;overflow:hidden;
+  }
+  .qlink-chip-link{
+    padding:6px 10px;font-size:12px;font-weight:600;color:var(--navy);text-decoration:none;white-space:nowrap;
+  }
+  .qlink-chip:hover{background:var(--hover-blue-soft);border-color:var(--navy);}
+  .qlink-chip-del{
+    background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:10px;
+    padding:6px 8px 6px 0;line-height:1;
+  }
+  .qlink-chip-del:hover{color:var(--danger);}
+  .qlink-chip-add{
+    background:none;border:1px dashed var(--card-border);border-radius:999px;color:var(--text-light-gray);
+    cursor:pointer;font-size:12px;padding:6px 10px;white-space:nowrap;
+  }
+  .qlink-chip-add:hover{border-color:var(--navy);color:var(--navy);}
+  @media (max-width:1100px){ .topbar-quicklinks{display:none;} }
   .search-results{
     position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:80vw;background:#fff;border:1px solid var(--card-border);
     border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.14);z-index:120;display:none;overflow:hidden;max-height:420px;
@@ -655,6 +677,7 @@
         <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
         <div class="search-results" id="searchResults"></div>
       </div>
+      <div class="topbar-quicklinks" id="quickLinks"></div>
       <button class="top-icon-btn" id="noteBtn" title="오늘 할 일">📝<span class="badge-dot" id="todoBadge">0</span></button>
       <button class="top-icon-btn" id="notifBtn" title="알림 (미연결 — 연결된 기존 기능 없음)" disabled>🔔</button>
       <button class="top-icon-btn" id="userBtn" title="사용자 (미연결 — 연결된 기존 기능 없음)" disabled>👤</button>
@@ -702,11 +725,6 @@
       <button type="button" class="sidebar-footer-link" id="manualFooterLink">업무매뉴얼</button>
       <button type="button" class="sidebar-footer-link" id="vaultFooterLink">계정관리</button>
       <button type="button" class="sidebar-footer-link" id="settingsFooterLink">설정</button>
-
-      <div class="sidebar-quicklinks">
-        <div class="sidebar-group-label">바로가기</div>
-        <div class="quicklinks-grid" id="quickLinks"></div>
-      </div>
     </div>
 
     <div class="ai-note-composer">
@@ -1795,8 +1813,10 @@ contentEl.addEventListener('click', (e)=>{
     });
   }
   else if(action === 'step-delete'){
-    guide.steps = guide.steps.filter(s=>s.id!==btn.dataset.step);
-    saveState(); render();
+    if(confirm('이 단계를 삭제하시겠습니까?')){
+      guide.steps = guide.steps.filter(s=>s.id!==btn.dataset.step);
+      saveState(); render();
+    }
   }
   else if(action === 'step-edit-toggle'){
     stepEditMode = !stepEditMode;
@@ -1833,8 +1853,10 @@ contentEl.addEventListener('click', (e)=>{
     });
   }
   else if(action === 'block-delete'){
-    guide.blocks = guide.blocks.filter(b=>b.id!==btn.dataset.block);
-    saveState(); render();
+    if(confirm('이 메모를 삭제하시겠습니까?')){
+      guide.blocks = guide.blocks.filter(b=>b.id!==btn.dataset.block);
+      saveState(); render();
+    }
   }
   else if(action === 'block-copy'){
     const block = guide.blocks.find(b=>b.id===btn.dataset.block);
@@ -1846,8 +1868,10 @@ contentEl.addEventListener('click', (e)=>{
     saveState(); render();
   }
   else if(action === 'todo-delete'){
-    state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
-    saveState(); render();
+    if(confirm('이 할 일을 삭제하시겠습니까?')){
+      state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
+      saveState(); render();
+    }
   }
   else if(action === 'phrase-add'){
     openModal({
@@ -1869,8 +1893,10 @@ contentEl.addEventListener('click', (e)=>{
     });
   }
   else if(action === 'phrase-delete'){
-    state.phrases = state.phrases.filter(p=>p.id!==btn.dataset.id);
-    saveState(); render();
+    if(confirm('이 멘트를 삭제하시겠습니까?')){
+      state.phrases = state.phrases.filter(p=>p.id!==btn.dataset.id);
+      saveState(); render();
+    }
   }
   else if(action === 'phrase-copy'){
     const p = state.phrases.find(p=>p.id===btn.dataset.id);
@@ -1890,7 +1916,13 @@ contentEl.addEventListener('click', (e)=>{
   }
   else if(action === 'company-delete'){
     const c = state.companies.find(c=>c.id===btn.dataset.id);
-    if(c && confirm(`"${c.name}" 업체를 삭제할까요?`)){
+    if(!c) return;
+    // 연결된 오늘 업무/통화 기록이 있으면 그 기록은 그대로 두고 업체 정보만 삭제한다는 것을 미리 알린다(연쇄 삭제 금지)
+    const hasLinked = state.workItems.some(w=>w.companyId===c.id) || state.callLogs.some(l=>l.companyId===c.id);
+    const msg = hasLinked
+      ? `"${c.name}" 업체를 삭제하시겠습니까?\n이 업체에 연결된 오늘 업무/통화 기록이 있습니다. 해당 기록은 삭제하지 않고 업체정보만 삭제합니다.`
+      : `"${c.name}" 업체를 삭제하시겠습니까?`;
+    if(confirm(msg)){
       state.companies = state.companies.filter(x=>x.id!==c.id);
       companySearchQuery = '';
       saveState(); render();
@@ -1927,12 +1959,7 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'tool-settings'){
     openAiSettingsModal();
   }
-  else if(action === 'tool-shortcuts'){
-    homeShortcutsOpen = !homeShortcutsOpen;
-    render();
-  }
   else if(action === 'qlink-add-slot'){
-    // 홈 화면의 바로가기 패널에서도 사이드바와 동일한 기존 추가 기능을 재사용
     openAddQuickLinkModal();
   }
 });
@@ -2282,22 +2309,17 @@ function getQuickLinkIcon(title){
   }
   return { cls:'', style:'', html: escapeHtml(t.charAt(0).toUpperCase() || '#') };
 }
-/* 상단 바로가기: 고정 업무 런처 형태 — 삭제(X) 없이 클릭 시 바로 이동만 수행
-   (사이드바 목록과 홈 화면의 "바로가기" 접이식 패널이 동일한 마크업을 공유한다) */
+/* 상단 헤더 바로가기: 검색창 옆에 작은 캡슐 버튼으로 표시. 클릭 시 새 탭으로 열리고(target=_blank),
+   각 캡슐에는 작은 삭제(✕) 버튼이 있다(평소엔 연하게, hover 시에만 진하게 — 큰 빨간 버튼 사용 안 함). */
 function quickLinksMarkup(){
-  let html = state.links.map(l => {
-    const icon = getQuickLinkIcon(l.title);
-    return `
-    <div class="qlink-slot filled" data-entry="link-${l.id}">
-      <a class="qlink-main" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">
-        <span class="qlink-icon ${icon.cls}" style="${icon.style}">${icon.html}</span>
-        <span class="qlink-title">${escapeHtml(l.title)}</span>
-      </a>
-    </div>
-  `;
-  }).join('');
+  let html = state.links.map(l => `
+    <span class="qlink-chip" data-entry="link-${l.id}">
+      <a class="qlink-chip-link" href="${escapeHtml(l.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(l.title)}</a>
+      <button type="button" class="qlink-chip-del" data-action="qlink-delete" data-id="${l.id}" title="바로가기 삭제">✕</button>
+    </span>
+  `).join('');
   if(state.links.length < MAX_QUICKLINKS){
-    html += `<button type="button" class="qlink-slot empty" data-action="qlink-add-slot">+ 바로가기</button>`;
+    html += `<button type="button" class="qlink-chip-add" data-action="qlink-add-slot">+ 바로가기</button>`;
   }
   return html;
 }
@@ -2307,6 +2329,14 @@ function renderQuickLinks(){
 quickLinksEl.addEventListener('click', (e)=>{
   const addBtn = e.target.closest('[data-action="qlink-add-slot"]');
   if(addBtn){ openAddQuickLinkModal(); return; }
+  const delBtn = e.target.closest('[data-action="qlink-delete"]');
+  if(delBtn){
+    const link = state.links.find(l => l.id === delBtn.dataset.id);
+    if(link && confirm(`"${link.title}" 바로가기를 삭제하시겠습니까?`)){
+      state.links = state.links.filter(l => l.id !== link.id);
+      saveState(); renderQuickLinks();
+    }
+  }
 });
 
 /* ---------- Note Panel (할 일 목록, 상단 📝 아이콘 → 오른쪽 슬라이드 패널) ---------- */
@@ -2358,8 +2388,10 @@ notePanelBody.addEventListener('click', (e)=>{
     t.done = !t.done;
     saveState(); renderNotePanel();
   } else if(action === 'note-todo-delete'){
-    state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
-    saveState(); renderNotePanel();
+    if(confirm('이 할 일을 삭제하시겠습니까?')){
+      state.todos = state.todos.filter(t=>t.id!==btn.dataset.id);
+      saveState(); renderNotePanel();
+    }
   }
 });
 notePanelBody.addEventListener('submit', (e)=>{
@@ -2933,7 +2965,12 @@ function renderPhoneAssistantCore(){
                 <input type="text" class="pa-qa-question-input" data-qa-id="${cur.id}" placeholder="질문을 입력하세요" value="${escapeHtml(cur.question)}" />
                 <button type="button" class="pa-qa-del" data-pa-action="qa-delete" data-id="${cur.id}" title="이 질문 삭제">✕</button>
               </div>
-            ` : `<div class="pa-qa-focus-question">${escapeHtml(cur.question)}</div>`}
+            ` : `
+              <div class="pa-qa-question-edit-row">
+                <div class="pa-qa-focus-question" style="margin-bottom:0;flex:1;">${escapeHtml(cur.question)}</div>
+                <button type="button" class="pa-qa-del" data-pa-action="qa-delete" data-id="${cur.id}" title="이 질문 삭제">✕</button>
+              </div>
+            `}
             <div class="pa-qa-focus-answer-label">상대방 답변</div>
             <input type="text" class="pa-qa-answer pa-qa-focus-answer" data-qa-id="${cur.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(cur.answer)}" autocomplete="off" />
             <div class="pa-qa-focus-actions">
@@ -3096,7 +3133,7 @@ function renderHomeView(){
   `;
 }
 
-let homeShortcutsOpen = false; // 홈 화면의 "바로가기" 접이식 패널 열림 상태(임시 UI 상태, 데이터는 아님)
+// 바로가기는 상단 헤더로 이동했으므로(검색창 옆) 업무도구에는 더 이상 중복 표시하지 않는다.
 function renderWorkToolsRow(){
   return `
     <div class="worktools-row">
@@ -3106,9 +3143,7 @@ function renderWorkToolsRow(){
       <button type="button" class="worktools-btn" data-action="tool-manual">업무매뉴얼</button>
       <button type="button" class="worktools-btn" data-action="tool-vault">계정관리</button>
       <button type="button" class="worktools-btn" data-action="tool-settings">설정</button>
-      <button type="button" class="worktools-btn ${homeShortcutsOpen ? 'active' : ''}" data-action="tool-shortcuts">바로가기</button>
     </div>
-    ${homeShortcutsOpen ? `<div class="quicklinks-grid home-shortcuts-grid">${quickLinksMarkup()}</div>` : ''}
   `;
 }
 
@@ -3215,6 +3250,17 @@ function renderPhoneAdminPanel(){
           </span>
         </div>
       `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 아파트/현장이 없습니다</div>'}
+    </div>
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>📞 저장된 통화 기록 (${state.callLogs.length})</span></div>
+      ${state.callLogs.slice().reverse().map(log => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(new Date(log.at).toLocaleString('ko-KR'))} · ${escapeHtml(log.companyName || log.siteName || log.firstLine || '상대방 미확인')} — ${escapeHtml((log.summary||'').split('\n')[0].slice(0,30))}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn danger" data-pa-action="calllog-delete" data-id="${log.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">저장된 통화 기록이 없습니다</div>'}
     </div>
   `;
 }
@@ -3331,9 +3377,13 @@ contentEl.addEventListener('click', (e)=>{
       if(last) last.focus();
     });
   } else if(action === 'qa-delete'){
-    phoneSession.qa = phoneSession.qa.filter(q => q.id !== btn.dataset.id);
-    persistActiveCall();
-    render();
+    if(confirm('이 질문을 삭제하시겠습니까?')){
+      const delIdx = phoneSession.qa.findIndex(q => q.id === btn.dataset.id);
+      phoneSession.qa = phoneSession.qa.filter(q => q.id !== btn.dataset.id);
+      if(phoneSession.currentQaIndex >= delIdx) phoneSession.currentQaIndex = Math.max(0, phoneSession.currentQaIndex - 1);
+      persistActiveCall();
+      render();
+    }
   } else if(action === 'qa-jump'){
     phoneSession.currentQaIndex = Number(btn.dataset.index);
     persistActiveCall();
@@ -3355,9 +3405,11 @@ contentEl.addEventListener('click', (e)=>{
       if(last) last.focus();
     });
   } else if(action === 'followup-delete'){
-    phoneSession.followups.splice(Number(btn.dataset.index), 1);
-    persistActiveCall();
-    render();
+    if(confirm('이 후속 업무를 삭제하시겠습니까?')){
+      phoneSession.followups.splice(Number(btn.dataset.index), 1);
+      persistActiveCall();
+      render();
+    }
   } else if(action === 'save-call'){
     savePhoneCallLog();
   } else if(action === 'copy-script'){
@@ -3420,6 +3472,12 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'site-edit'){ openPhoneSiteModal(btn.dataset.id); }
   else if(action === 'site-delete'){
     if(confirm('삭제할까요?')){ state.sites = state.sites.filter(s=>s.id!==btn.dataset.id); saveState(); render(); }
+  }
+  else if(action === 'calllog-delete'){
+    if(confirm('이 통화 기록을 삭제하시겠습니까?')){
+      state.callLogs = state.callLogs.filter(l=>l.id!==btn.dataset.id);
+      saveState(); render();
+    }
   }
 });
 
@@ -3546,6 +3604,7 @@ function renderTodayDetail(w, meta, company, site){
         <button class="copy-btn" data-tw-action="done" data-id="${w.id}">${escapeHtml(meta.doneLabel)}</button>
         <button class="copy-btn" data-tw-action="call-start" data-id="${w.id}">📞 전화 시작</button>
         <button class="copy-btn" data-tw-action="snooze-menu" data-id="${w.id}">나중에</button>
+        <button class="copy-btn" data-tw-action="work-delete" data-id="${w.id}" title="이 업무 삭제">🗑 삭제</button>
       </div>
       <div class="today-snooze-menu" id="snoozeMenu-${w.id}" style="display:none;">
         <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="30">30분 후</button>
@@ -3583,6 +3642,12 @@ contentEl.addEventListener('click', (e)=>{
     w.done = true; w.doneAt = Date.now();
     saveState(); render();
     showToast('완료 처리되었습니다');
+  } else if(action === 'work-delete'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(w && confirm('이 업무를 삭제하시겠습니까?')){
+      state.workItems = state.workItems.filter(x=>x.id!==w.id);
+      saveState(); render();
+    }
   } else if(action === 'call-start'){
     const w = state.workItems.find(w=>w.id===btn.dataset.id);
     if(!w) return;
