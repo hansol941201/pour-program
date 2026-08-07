@@ -498,6 +498,9 @@
     font-size:12px;color:var(--text-gray);background:var(--bg);border:1px solid var(--card-border);
     border-radius:999px;padding:3px 10px;
   }
+  .pa-scenario-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .pa-scenario-extra{font-size:13.5px;color:var(--text-dark);}
+  .pa-scenario-followup-list{margin:0;padding-left:18px;font-size:13.5px;color:var(--text-dark);line-height:1.9;}
   .pa-followup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--card-border);font-size:13.5px;}
   .pa-followup-item:last-child{border-bottom:none;}
   .pa-followup-input{
@@ -2577,6 +2580,89 @@ function findPhoneMaterial(){
   return null;
 }
 
+/* ---------- 업무 유형(시나리오) 판별 ----------
+   "견적문의" 같은 업무 유형이 인식되면, 여러 곳에 흩어져 있는 기존 데이터(가이드 단계/전화 메모/
+   가이드 메모/자주 쓰는 멘트)를 전부 모아 하나의 시나리오로 묶는다. 새 문장/새 절차는 절대 만들지 않고,
+   저장된 텍스트를 "말할 문장(문장부호·따옴표로 끝남)"과 "확인 항목(짧은 라벨)"으로만 재배치한다. */
+const BUSINESS_TYPE_TAGS = ['견적','체결','시방서','공법설명회','자료요청','특허','현장등록','질문서'];
+const BUSINESS_TYPE_LABEL = {
+  '견적':'견적문의', '체결':'체결문의', '시방서':'시방서', '공법설명회':'공법설명회',
+  '자료요청':'자료요청', '특허':'특허문의', '현장등록':'현장등록', '질문서':'질문서'
+};
+function primaryBusinessTag(matchedIntents){
+  for(let i = matchedIntents.length - 1; i >= 0; i--){
+    if(BUSINESS_TYPE_TAGS.includes(matchedIntents[i])) return matchedIntents[i];
+  }
+  return null;
+}
+// 말하는 문장처럼 보이는 줄(따옴표로 감싸져 있거나 문장부호로 끝남)만 골라낸다
+function splitSpokenLines(body){
+  return String(body||'').split('\n').map(l=>l.trim()).filter(Boolean)
+    .filter(l => /["“”]|[.?!]$/.test(l));
+}
+// 짧은 확인 항목/체크리스트처럼 보이는 줄(문장부호로 끝나지 않는 짧은 라벨)만 골라낸다
+function splitChecklistLines(body){
+  return String(body||'').split('\n').map(l=>l.trim()).filter(Boolean)
+    .filter(l => !/["“”]|[.?!]$/.test(l));
+}
+function buildIntentScenario(s){
+  const tag = primaryBusinessTag(s.matchedIntents);
+  if(!tag) return null;
+
+  const checklist = [];
+  const seenCheck = new Set();
+  const sayCandidates = [];
+  function addCheck(label){
+    const k = String(label||'').trim();
+    if(k && !seenCheck.has(k)){ seenCheck.add(k); checklist.push(k); }
+  }
+  function addSay(text){
+    const t = String(text||'').trim();
+    if(t && !sayCandidates.includes(t)) sayCandidates.push(t);
+  }
+
+  // 1) 업무 순서(가이드) — 가이드 자체가 이 업무 유형이거나, 개별 단계 라벨이 매칭되면 그 단계를 모은다
+  state.guides.forEach(g => {
+    const guideMatches = textIncludesAny(`${g.tag||''} ${g.title||''}`, [tag]);
+    g.steps.forEach(st => {
+      if(guideMatches || textIncludesAny(st.label, [tag])){
+        addCheck(st.label);
+        if(st.hasPhone && (st.phoneNote||'').trim()) addSay(st.phoneNote);
+      }
+    });
+    g.blocks.forEach(b => {
+      if(textIncludesAny(b.body, [tag])){
+        splitChecklistLines(b.body).forEach(addCheck);
+        splitSpokenLines(b.body).forEach(addSay);
+      }
+    });
+  });
+  // 2) 자주 쓰는 멘트 — 여러 줄로 저장돼 있으면 확인 항목/말할 문장으로 나누고, 짧은 한 줄이면 그대로 말할 문장으로 사용
+  state.phrases.forEach(p => {
+    if(!textIncludesAny(`${p.title} ${p.body}`, [tag])) return;
+    const checks = splitChecklistLines(p.body);
+    const says = splitSpokenLines(p.body);
+    checks.forEach(addCheck);
+    says.forEach(addSay);
+    if(!checks.length && !says.length) addSay(p.body);
+  });
+
+  if(!checklist.length && !sayCandidates.length) return null;
+
+  const blocks = [];
+  if(sayCandidates[0]) blocks.push({ type:'say', text: sayCandidates[0] });
+  if(checklist.length) blocks.push({ type:'check', items: checklist });
+  sayCandidates.slice(1).forEach(text => blocks.push({ type:'say', text }));
+
+  return {
+    tag,
+    label: BUSINESS_TYPE_LABEL[tag] || tag,
+    blocks,
+    material: MATERIAL_REQUEST_TAGS.includes(tag) ? findPhoneMaterial() : null,
+    followups: buildPhoneFollowups(s)
+  };
+}
+
 // "지금 말할 내용"을 대화형 대본(말할 문장 → 확인 항목 → 다음 말할 문장 …)으로 구성한다.
 // 새 문장을 지어내지 않고, 기존에 저장된 데이터만 순서대로 엮는다:
 //   - 여는 문장: 기존 자주 쓰는 멘트/가이드 메모 중 매칭되는 것(기존 findScriptForTags 그대로 재사용)
@@ -2693,14 +2779,17 @@ function renderPhoneAssistantCore(){
   const wantsMaterial = s.matchedIntents.some(t => MATERIAL_REQUEST_TAGS.includes(t));
   const jurisdiction = s.region ? (state.jurisdictions.find(j=>j.region===s.region) || 'missing') : null;
   const checkSteps = procedure ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
-  const scriptBlocks = buildPhoneScript(s, script, procedure);
+  // "견적문의"처럼 업무 유형이 뚜렷하게 인식되면, 흩어진 기존 데이터를 모두 모은 전용 시나리오를 우선 사용한다.
+  // 업무 유형이 뚜렷하지 않을 때만 기존 대화형 대본(buildPhoneScript)으로 대체 표시한다.
+  const scenario = buildIntentScenario(s);
+  const scriptBlocks = scenario ? scenario.blocks : buildPhoneScript(s, script, procedure);
 
   s.lastScript = script;
-  s.lastMaterial = material;
+  s.lastMaterial = scenario && scenario.material ? scenario.material : material;
   s.lastJurisdiction = (jurisdiction && jurisdiction !== 'missing') ? jurisdiction : null;
   s.lastScriptBlocks = scriptBlocks;
 
-  const nothingYet = !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
+  const nothingYet = !scenario && !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
 
   return `
     <div class="card pa-callbar">
@@ -2730,27 +2819,41 @@ function renderPhoneAssistantCore(){
     ${scriptBlocks.length ? `
       <div class="card highlight">
         <div class="card-head">
-          <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용 (대본)</div>
-          <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 대본 전체 복사</button></div>
+          <div class="card-title" style="margin:0;">🗣️ ${scenario ? escapeHtml(scenario.label) + ' 시나리오' : '지금 말할 내용 (대본)'}</div>
+          <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 말할 문장 복사</button></div>
         </div>
         <div class="pa-script">
           ${scriptBlocks.map((b,i) => b.type === 'say' ? `
             <div class="pa-script-say">
-              <div class="pa-script-say-label">${i===0 ? '내가 말할 내용' : '다음에 말할 내용'}</div>
+              <div class="pa-script-say-label">${i===0 ? '내가 먼저 말할 내용' : '다음에 말할 내용'}</div>
               <div class="pa-script-say-text">${escapeHtml(b.text)}</div>
               <button class="copy-btn" data-pa-action="copy-script-line" data-index="${i}">📋 이 문장 복사</button>
             </div>
           ` : `
             <div class="pa-script-check">
-              <div class="pa-script-check-label">확인</div>
+              <div class="pa-script-check-label">확인할 순서</div>
               <div class="pa-script-check-items">${b.items.map(it => `<span>${escapeHtml(it)}</span>`).join('')}</div>
             </div>
           `).join('')}
         </div>
+        ${scenario && scenario.material ? `
+          <div class="pa-scenario-block">
+            <div class="pa-script-check-label">필요한 추가 정보</div>
+            <div class="pa-scenario-extra">${escapeHtml(scenario.material.name)} — ${escapeHtml(scenario.material.location)}</div>
+          </div>
+        ` : ''}
+        ${scenario && scenario.followups.length ? `
+          <div class="pa-scenario-block">
+            <div class="pa-script-check-label">후속 업무</div>
+            <ul class="pa-scenario-followup-list">
+              ${scenario.followups.map(f => `<li>${escapeHtml(f.text)}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
       </div>
     ` : ''}
 
-    ${procedure ? `
+    ${procedure && !scenario ? `
       <div class="card">
         <div class="card-title">📋 지금 해야 할 업무 순서 — ${escapeHtml(procedure.title)}</div>
         <div class="steps-row" style="margin-bottom:0;">
@@ -2762,7 +2865,7 @@ function renderPhoneAssistantCore(){
       </div>
     ` : ''}
 
-    ${material || wantsMaterial ? `
+    ${(material || wantsMaterial) && !(scenario && scenario.material) ? `
       <div class="card">
         <div class="card-title">📎 관련 자료</div>
         ${material ? `
