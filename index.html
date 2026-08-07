@@ -501,6 +501,57 @@
   .pa-scenario-block{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
   .pa-scenario-extra{font-size:13.5px;color:var(--text-dark);}
   .pa-scenario-followup-list{margin:0;padding-left:18px;font-size:13.5px;color:var(--text-dark);line-height:1.9;}
+
+  /* 업무 유형 질문(Question) + 답변(Answer) — 전체 진행순서(요약) + 현재 질문(대본, 크게 강조) */
+  .pa-qa-overview{display:flex;flex-direction:column;gap:2px;margin-bottom:16px;}
+  .pa-qa-ov-row{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+    border-radius:8px;padding:7px 8px;cursor:pointer;font-family:inherit;
+  }
+  .pa-qa-ov-row:hover{background:var(--bg);}
+  .pa-qa-ov-row.current{background:var(--hover-blue-soft);}
+  .pa-qa-ov-mark{
+    flex:0 0 22px;font-size:11.5px;font-weight:800;color:var(--text-light-gray);text-align:center;
+  }
+  .pa-qa-ov-row.answered .pa-qa-ov-mark{color:#1b9e6a;}
+  .pa-qa-ov-row.current .pa-qa-ov-mark{color:var(--accent-dark);}
+  .pa-qa-ov-label{flex:1;min-width:0;font-size:13px;color:var(--text-gray);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .pa-qa-ov-row.current .pa-qa-ov-label{color:var(--text-dark);font-weight:700;}
+  .pa-qa-ov-row.answered .pa-qa-ov-label{color:var(--text-dark);}
+  .pa-qa-ov-current-tag{
+    flex:none;font-size:10.5px;font-weight:800;color:var(--accent-dark);background:#fff;
+    border-radius:999px;padding:2px 8px;
+  }
+
+  .pa-qa-focus{
+    background:var(--hover-blue-soft);border-radius:12px;padding:18px;margin-bottom:12px;
+  }
+  .pa-qa-focus-head{font-size:11px;font-weight:700;color:var(--accent-dark);letter-spacing:.03em;margin-bottom:8px;}
+  .pa-qa-focus-hint{font-size:12px;color:var(--text-gray);margin-bottom:4px;}
+  .pa-qa-focus-question{font-size:20px;font-weight:800;line-height:1.5;color:var(--text-dark);margin-bottom:16px;}
+  .pa-qa-focus-answer-label{font-size:11px;font-weight:700;color:var(--text-gray);margin-bottom:6px;}
+  .pa-qa-focus-answer{font-size:16px;padding:12px 14px;}
+  .pa-qa-focus-actions{display:flex;align-items:center;gap:8px;margin-top:14px;}
+
+  .pa-qa-question-edit-row{display:flex;gap:6px;margin-bottom:16px;}
+  .pa-qa-question-input{
+    flex:1;min-width:0;font-size:16px;font-weight:700;padding:9px 11px;border-radius:8px;
+    border:1px solid var(--card-border);font-family:inherit;
+  }
+  .pa-qa-question-input:focus{outline:none;border-color:var(--accent);}
+  .pa-qa-del{flex:none;background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:13px;padding:0 6px;}
+  .pa-qa-del:hover{color:var(--danger);}
+  .pa-qa-answer{
+    width:100%;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:14px;font-family:inherit;color:var(--text-dark);background:#fff;
+  }
+  .pa-qa-answer:focus{outline:none;border-color:var(--accent);}
+  .pa-qa-answer::placeholder{color:var(--text-light-gray);}
+  .pa-qa-add{
+    width:100%;border:1px dashed var(--card-border);background:none;border-radius:8px;
+    padding:10px;color:var(--text-gray);cursor:pointer;font-size:13px;
+  }
+  .pa-qa-add:hover{border-color:var(--accent);color:var(--accent-dark);}
   .pa-followup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--card-border);font-size:13.5px;}
   .pa-followup-item:last-child{border-bottom:none;}
   .pa-followup-input{
@@ -1953,6 +2004,18 @@ contentEl.addEventListener('input', (e)=>{
       phoneSession.followups[idx].text = e.target.value;
       persistActiveCall();
     }
+    return;
+  }
+  // 전화 비서: 질문별 답변 입력 — render() 없이 값만 반영해 타이핑 중 포커스를 유지한다
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-answer')){
+    const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
+    if(item){ item.answer = e.target.value; persistActiveCall(); }
+    return;
+  }
+  // 전화 비서: [+ 질문 추가]로 만든 질문의 질문 텍스트 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-question-input')){
+    const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
+    if(item){ item.question = e.target.value; persistActiveCall(); }
   }
 });
 
@@ -2508,7 +2571,8 @@ let phoneSession = null;
 function newPhoneSession(){
   return {
     active:true, notes:[], matchedIntents:[], region:null, site:null, company:null, firstLine:'',
-    rawMemo:'', // 통화 메모(자유 입력 textarea) 원문 — 검색창에서 넘어온 notes와는 별개로 절대 덮어쓰지 않는다
+    rawMemo:'', // 통화 메모(자유 입력 textarea) 원문 — 업무 유형이 인식되지 않았을 때만 사용. 절대 덮어쓰지 않는다
+    scenarioTag:null, qa:[], currentQaIndex:0, // 업무 유형이 인식되면 질문(question)+답변(answer) 목록으로 통화를 진행한다
     endedAt:null, report:null, followups:[],
     lastScript:null, lastMaterial:null, lastJurisdiction:null, lastScriptBlocks:[]
   };
@@ -2525,13 +2589,27 @@ function addPhoneNote(text){
   detectIntents(line).forEach(tag => {
     if(!phoneSession.matchedIntents.includes(tag)) phoneSession.matchedIntents.push(tag);
   });
+  // 업무 유형이 아직 확정되지 않았으면 다시 판별해본다(한 번 확정되면 답변을 잃지 않도록 다시 만들지 않는다)
+  if(!phoneSession.scenarioTag){
+    const tag = primaryBusinessTag(phoneSession.matchedIntents);
+    if(tag){
+      const questions = buildIntentQuestions(tag);
+      if(questions.length){
+        phoneSession.scenarioTag = tag;
+        phoneSession.qa = questions.map(q => ({ id: uid(), label: q.label, question: q.question, answer: '', source: 'auto' }));
+        phoneSession.currentQaIndex = 0;
+      }
+    }
+  }
   persistActiveCall();
 }
-// 통화 메모(rawMemo)와 검색창에서 입력했던 줄(notes)을 합친 전체 원문 — 요약 생성/저장에 사용
+// 검색창 줄(notes) + 질문·답변(qa) + 자유 메모(rawMemo, 업무 유형 미인식 시)를 합친 전체 원문 — 요약/저장에 사용
 function combinedRawMemo(s){
   const lines = s.notes.map(n => n.text);
+  const qaLines = (s.qa||[]).filter(q => (q.answer||'').trim())
+    .map(q => `${String(q.question||'').trim()} → ${q.answer.trim()}`);
   const extra = (s.rawMemo || '').split('\n').map(l => l.trim()).filter(Boolean);
-  return [...lines, ...extra].join('\n');
+  return [...lines, ...qaLines, ...extra].join('\n');
 }
 
 /* ---------- 통화 메모 임시 저장 (새로고침/실수 이동 대비, 저장 완료 전까지만 유지) ---------- */
@@ -2554,7 +2632,8 @@ function restoreActiveCall(){
     const raw = localStorage.getItem(ACTIVE_CALL_STORAGE_KEY);
     if(!raw) return null;
     const parsed = JSON.parse(raw);
-    if(parsed && (parsed.notes?.length || (parsed.rawMemo || '').trim() || parsed.endedAt)) return parsed;
+    const hasAnsweredQa = Array.isArray(parsed?.qa) && parsed.qa.some(q => (q.answer||'').trim());
+    if(parsed && (parsed.notes?.length || (parsed.rawMemo || '').trim() || parsed.endedAt || hasAnsweredQa)) return parsed;
   }catch(e){}
   return null;
 }
@@ -2605,62 +2684,64 @@ function splitChecklistLines(body){
   return String(body||'').split('\n').map(l=>l.trim()).filter(Boolean)
     .filter(l => !/["“”]|[.?!]$/.test(l));
 }
-function buildIntentScenario(s){
-  const tag = primaryBusinessTag(s.matchedIntents);
-  if(!tag) return null;
-
-  const checklist = [];
-  const seenCheck = new Set();
-  const sayCandidates = [];
-  function addCheck(label){
-    const k = String(label||'').trim();
-    if(k && !seenCheck.has(k)){ seenCheck.add(k); checklist.push(k); }
+// 짧은 진행순서 라벨(전체 목록 미리보기용). 새 문구를 만들지 않고 실제 문장을 그대로 잘라서 쓴다.
+function shortLabel(text){
+  const t = String(text||'').replace(/^["“]+|["”]+$/g,'').trim();
+  return t.length > 16 ? t.slice(0,16) + '…' : t;
+}
+// 업무 유형(tag)에 해당하는 "질문" 목록을 만든다. 각 항목은 {label(진행순서용 짧은 라벨), question(그대로
+// 읽을 전화대본 문장)}이다. 하드코딩된 질문이 아니라 매번 현재 state에서 다시 계산하므로, 업무지식
+// (가이드 단계/전화 메모/가이드 메모/자주 쓰는 멘트)을 나중에 추가하면 다음 통화부터 자동으로 반영된다.
+// 문장 자체도 지어내지 않는다: 저장된 전화 메모(phoneNote)·말하는 문장을 우선 쓰고, 그런 문장이 없는
+// 항목은 저장된 단계 라벨/체크리스트 문구를 그대로 질문 자리에 사용한다.
+function buildIntentQuestions(tag){
+  const items = [];
+  const seen = new Set();
+  function addItem(label, question){
+    const q = String(question || label || '').trim();
+    const key = q.replace(/\s+/g,'');
+    if(q && !seen.has(key)){ seen.add(key); items.push({ label: String(label || q).trim(), question: q }); }
   }
-  function addSay(text){
-    const t = String(text||'').trim();
-    if(t && !sayCandidates.includes(t)) sayCandidates.push(t);
-  }
-
-  // 1) 업무 순서(가이드) — 가이드 자체가 이 업무 유형이거나, 개별 단계 라벨이 매칭되면 그 단계를 모은다
   state.guides.forEach(g => {
     const guideMatches = textIncludesAny(`${g.tag||''} ${g.title||''}`, [tag]);
     g.steps.forEach(st => {
       if(guideMatches || textIncludesAny(st.label, [tag])){
-        addCheck(st.label);
-        if(st.hasPhone && (st.phoneNote||'').trim()) addSay(st.phoneNote);
+        const q = st.hasPhone && (st.phoneNote||'').trim() ? st.phoneNote.trim() : st.label;
+        addItem(st.label, q);
       }
     });
     g.blocks.forEach(b => {
       if(textIncludesAny(b.body, [tag])){
-        splitChecklistLines(b.body).forEach(addCheck);
-        splitSpokenLines(b.body).forEach(addSay);
+        splitSpokenLines(b.body).forEach(t => addItem(shortLabel(t), t));
+        splitChecklistLines(b.body).forEach(t => addItem(t, t));
       }
     });
   });
-  // 2) 자주 쓰는 멘트 — 여러 줄로 저장돼 있으면 확인 항목/말할 문장으로 나누고, 짧은 한 줄이면 그대로 말할 문장으로 사용
   state.phrases.forEach(p => {
     if(!textIncludesAny(`${p.title} ${p.body}`, [tag])) return;
-    const checks = splitChecklistLines(p.body);
     const says = splitSpokenLines(p.body);
-    checks.forEach(addCheck);
-    says.forEach(addSay);
-    if(!checks.length && !says.length) addSay(p.body);
+    const checks = splitChecklistLines(p.body);
+    says.forEach(t => addItem(shortLabel(t), t));
+    checks.forEach(t => addItem(t, t));
+    if(!says.length && !checks.length) addItem(shortLabel(p.body), p.body);
   });
-
-  if(!checklist.length && !sayCandidates.length) return null;
-
-  const blocks = [];
-  if(sayCandidates[0]) blocks.push({ type:'say', text: sayCandidates[0] });
-  if(checklist.length) blocks.push({ type:'check', items: checklist });
-  sayCandidates.slice(1).forEach(text => blocks.push({ type:'say', text }));
-
-  return {
-    tag,
-    label: BUSINESS_TYPE_LABEL[tag] || tag,
-    blocks,
-    material: MATERIAL_REQUEST_TAGS.includes(tag) ? findPhoneMaterial() : null,
-    followups: buildPhoneFollowups(s)
-  };
+  return items;
+}
+// 업무 유형별로 진행된 질문/답변을 자연스러운 업무 전달 문구로 정리한다(사실은 절대 바꾸지 않고,
+// 답변이 있는 항목만 사용한다 — 빈 답변에 "미확인"처럼 억지 문구를 채우지 않는다).
+function buildScenarioSummary(s){
+  const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '고객');
+  const typeLabel = BUSINESS_TYPE_LABEL[s.scenarioTag] || '';
+  const answered = (s.qa||[]).filter(q => (q.answer||'').trim());
+  const lines = [`${who}${/님$/.test(who) ? '' : ' 측'}에서${typeLabel ? ' ' + typeLabel + ' 관련하여' : ''} 전화 문의주셨습니다.`];
+  if(answered.length){
+    lines.push('');
+    answered.forEach(q => {
+      const qText = String(q.question||'').replace(/^["“]+|["”]+$/g,'').replace(/[.?!]+$/,'').trim();
+      lines.push(qText ? `${qText} → ${q.answer.trim()}` : q.answer.trim());
+    });
+  }
+  return lines.join('\n');
 }
 
 // "지금 말할 내용"을 대화형 대본(말할 문장 → 확인 항목 → 다음 말할 문장 …)으로 구성한다.
@@ -2684,6 +2765,9 @@ function buildPhoneScript(s, openingScript, procedure){
 }
 
 function buildPhoneCallReport(s){
+  // 업무 유형(질문/답변) 흐름으로 진행된 통화는 답변 기반 요약을 우선 사용한다
+  if(s.scenarioTag && (s.qa||[]).length) return buildScenarioSummary(s);
+
   const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '상대방');
   const lines = [`${who}${/님|소장|담당자|과장|부장|팀장|대표$/.test(who) ? '' : ' 관계자'}께서 전화 문의주셨습니다.`, ''];
   const seen = new Set();
@@ -2731,7 +2815,7 @@ async function polishPhoneReport(apiKey){
   if(!s || !s.report) return;
   try{
     showToast('AI로 다듬는 중...');
-    const prompt = `아래는 전화 통화 내용을 정리한 업무보고 초안이야. 사실 내용을 절대 바꾸지 말고, 문장만 정중하고 자연스럽게 다듬어줘. 새로운 사실을 추가하지 마.\n\n${s.report}\n\n다듬은 보고 문구만 출력해.`;
+    const prompt = `아래는 전화 통화 내용을 정리한 업무 전달 문구 초안이야. 사실 내용을 절대 바꾸거나 추가하지 말고, 회사 메신저로 담당자에게 바로 전달할 수 있는 간단하고 자연스러운 문체로 다듬어줘. 지나치게 공식적인 보고서 문체로 만들지 마.\n\n${s.report}\n\n다듬은 문구만 출력해.`;
     const result = await callOpenAI(apiKey, prompt);
     if(result){ s.report = result; render(); }
   }catch(err){ console.error(err); showToast('AI 다듬기에 실패했습니다'); }
@@ -2750,6 +2834,8 @@ function savePhoneCallLog(){
     siteId: s.site ? s.site.id : null,
     siteName: s.site ? s.site.name : '',
     firstLine: s.firstLine || '',
+    scenarioTag: s.scenarioTag || null,
+    qa: (s.qa||[]).map(q => ({ question: q.question, answer: q.answer })), // 질문+답변 원본 그대로 보존
     rawMemo: combinedRawMemo(s),   // 사용자가 입력한 원문 그대로 (AI가 절대 덮어쓰지 않음)
     summary: s.report || '',       // 정리본(사용자가 수정한 최종본)
     followUps: s.followups.map(f => f.text).filter(Boolean)
@@ -2778,18 +2864,18 @@ function renderPhoneAssistantCore(){
   const material = findPhoneMaterial();
   const wantsMaterial = s.matchedIntents.some(t => MATERIAL_REQUEST_TAGS.includes(t));
   const jurisdiction = s.region ? (state.jurisdictions.find(j=>j.region===s.region) || 'missing') : null;
-  const checkSteps = procedure ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
-  // "견적문의"처럼 업무 유형이 뚜렷하게 인식되면, 흩어진 기존 데이터를 모두 모은 전용 시나리오를 우선 사용한다.
+  // "견적문의"처럼 업무 유형이 뚜렷하게 인식되면 질문(question)+답변(answer) 목록으로 통화를 진행한다.
   // 업무 유형이 뚜렷하지 않을 때만 기존 대화형 대본(buildPhoneScript)으로 대체 표시한다.
-  const scenario = buildIntentScenario(s);
-  const scriptBlocks = scenario ? scenario.blocks : buildPhoneScript(s, script, procedure);
+  const hasQaScenario = !!(s.scenarioTag && s.qa.length);
+  const checkSteps = (procedure && !hasQaScenario) ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
+  const scriptBlocks = hasQaScenario ? [] : buildPhoneScript(s, script, procedure);
 
   s.lastScript = script;
-  s.lastMaterial = scenario && scenario.material ? scenario.material : material;
+  s.lastMaterial = material;
   s.lastJurisdiction = (jurisdiction && jurisdiction !== 'missing') ? jurisdiction : null;
   s.lastScriptBlocks = scriptBlocks;
 
-  const nothingYet = !scenario && !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
+  const nothingYet = !hasQaScenario && !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
 
   return `
     <div class="card pa-callbar">
@@ -2816,10 +2902,55 @@ function renderPhoneAssistantCore(){
       ` : ''}
     </div>
 
-    ${scriptBlocks.length ? `
+    ${hasQaScenario ? (() => {
+      // currentQaIndex 범위 보정(질문 추가/삭제로 배열 길이가 바뀌어도 항상 유효한 위치를 가리키게)
+      s.currentQaIndex = Math.max(0, Math.min(s.currentQaIndex || 0, s.qa.length - 1));
+      const curIdx = s.currentQaIndex;
+      const cur = s.qa[curIdx];
+      return `
+      <div class="card highlight pa-qa-card">
+        <div class="card-title" style="margin-bottom:12px;">🗣️ ${escapeHtml(BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag)} 진행순서</div>
+
+        <div class="pa-qa-overview">
+          ${s.qa.map((q,i) => {
+            const answered = (q.answer||'').trim().length > 0;
+            const isCur = i === curIdx;
+            return `
+            <button type="button" class="pa-qa-ov-row ${isCur ? 'current' : ''} ${answered ? 'answered' : ''}" data-pa-action="qa-jump" data-index="${i}">
+              <span class="pa-qa-ov-mark">${answered ? '✓' : (isCur ? '→' : String(i+1).padStart(2,'0'))}</span>
+              <span class="pa-qa-ov-label">${escapeHtml(q.label || q.question || '질문')}</span>
+              ${isCur ? '<span class="pa-qa-ov-current-tag">현재</span>' : ''}
+            </button>
+          `;}).join('')}
+        </div>
+
+        ${cur ? `
+          <div class="pa-qa-focus">
+            <div class="pa-qa-focus-head">현재 질문 ${curIdx+1} / ${s.qa.length}</div>
+            <div class="pa-qa-focus-hint">지금 이렇게 말하세요</div>
+            ${cur.source === 'custom' ? `
+              <div class="pa-qa-question-edit-row">
+                <input type="text" class="pa-qa-question-input" data-qa-id="${cur.id}" placeholder="질문을 입력하세요" value="${escapeHtml(cur.question)}" />
+                <button type="button" class="pa-qa-del" data-pa-action="qa-delete" data-id="${cur.id}" title="이 질문 삭제">✕</button>
+              </div>
+            ` : `<div class="pa-qa-focus-question">${escapeHtml(cur.question)}</div>`}
+            <div class="pa-qa-focus-answer-label">상대방 답변</div>
+            <input type="text" class="pa-qa-answer pa-qa-focus-answer" data-qa-id="${cur.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(cur.answer)}" autocomplete="off" />
+            <div class="pa-qa-focus-actions">
+              <button type="button" class="btn btn-ghost" data-pa-action="qa-skip">모름 / 건너뛰기</button>
+              <div style="flex:1;"></div>
+              <button type="button" class="btn btn-ghost" data-pa-action="qa-prev" ${curIdx===0 ? 'disabled' : ''}>이전</button>
+              <button type="button" class="btn btn-primary" data-pa-action="qa-next" ${curIdx>=s.qa.length-1 ? 'disabled' : ''}>다음</button>
+            </div>
+          </div>
+        ` : ''}
+
+        <button type="button" class="pa-qa-add" data-pa-action="qa-add">+ 질문 추가</button>
+      </div>
+    `; })() : (scriptBlocks.length ? `
       <div class="card highlight">
         <div class="card-head">
-          <div class="card-title" style="margin:0;">🗣️ ${scenario ? escapeHtml(scenario.label) + ' 시나리오' : '지금 말할 내용 (대본)'}</div>
+          <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용 (대본)</div>
           <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 말할 문장 복사</button></div>
         </div>
         <div class="pa-script">
@@ -2836,24 +2967,10 @@ function renderPhoneAssistantCore(){
             </div>
           `).join('')}
         </div>
-        ${scenario && scenario.material ? `
-          <div class="pa-scenario-block">
-            <div class="pa-script-check-label">필요한 추가 정보</div>
-            <div class="pa-scenario-extra">${escapeHtml(scenario.material.name)} — ${escapeHtml(scenario.material.location)}</div>
-          </div>
-        ` : ''}
-        ${scenario && scenario.followups.length ? `
-          <div class="pa-scenario-block">
-            <div class="pa-script-check-label">후속 업무</div>
-            <ul class="pa-scenario-followup-list">
-              ${scenario.followups.map(f => `<li>${escapeHtml(f.text)}</li>`).join('')}
-            </ul>
-          </div>
-        ` : ''}
       </div>
-    ` : ''}
+    ` : '')}
 
-    ${procedure && !scenario ? `
+    ${procedure && !hasQaScenario ? `
       <div class="card">
         <div class="card-title">📋 지금 해야 할 업무 순서 — ${escapeHtml(procedure.title)}</div>
         <div class="steps-row" style="margin-bottom:0;">
@@ -2865,7 +2982,7 @@ function renderPhoneAssistantCore(){
       </div>
     ` : ''}
 
-    ${(material || wantsMaterial) && !(scenario && scenario.material) ? `
+    ${material || wantsMaterial ? `
       <div class="card">
         <div class="card-title">📎 관련 자료</div>
         ${material ? `
@@ -2922,12 +3039,14 @@ function renderPhoneAssistantCore(){
 
     ${nothingYet ? `<div class="empty-state">입력한 내용과 일치하는 저장된 정보가 아직 없습니다. 단어를 더 입력해보세요.</div>` : ''}
 
-    <div class="card">
-      <div class="card-title">📝 통화 메모</div>
-      <textarea id="paRawMemo" class="pa-rawmemo" placeholder="전화하면서 메모를 계속 입력하세요…">${escapeHtml(s.rawMemo)}</textarea>
-    </div>
+    ${hasQaScenario ? '' : `
+      <div class="card">
+        <div class="card-title">📝 통화 메모</div>
+        <textarea id="paRawMemo" class="pa-rawmemo" placeholder="전화하면서 메모를 계속 입력하세요…">${escapeHtml(s.rawMemo)}</textarea>
+      </div>
+    `}
     <div class="pa-endcall-row">
-      <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 종료</button>
+      <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 완료</button>
     </div>
   `;
 }
@@ -3165,13 +3284,29 @@ contentEl.addEventListener('submit', (e)=>{
   requestAnimationFrame(()=>{ const el = document.getElementById('paInput'); if(el) el.focus(); });
 });
 
+// 질문 답변 입력 중 Enter를 누르면 [다음]과 동일하게 다음 질문으로 넘어간다
+contentEl.addEventListener('keydown', (e)=>{
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-focus-answer') && e.key === 'Enter'){
+    e.preventDefault();
+    if(!phoneSession) return;
+    phoneSession.currentQaIndex = Math.min(phoneSession.currentQaIndex + 1, phoneSession.qa.length - 1);
+    persistActiveCall();
+    render();
+    requestAnimationFrame(()=>{
+      const el = document.querySelector('.pa-qa-focus-answer');
+      if(el) el.focus();
+    });
+  }
+});
+
 contentEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-pa-action]');
   if(!btn) return;
   const action = btn.dataset.paAction;
   if(action === 'end-call'){
-    if(!phoneSession || (!phoneSession.notes.length && !(phoneSession.rawMemo||'').trim())){
-      showToast('입력된 통화 메모가 없습니다'); return;
+    const hasQaAnswer = !!(phoneSession && (phoneSession.qa||[]).some(q => (q.answer||'').trim()));
+    if(!phoneSession || (!phoneSession.notes.length && !(phoneSession.rawMemo||'').trim() && !hasQaAnswer)){
+      showToast('입력된 내용이 없습니다'); return;
     }
     // 통화 메모(rawMemo)에 등장한 키워드도 업무정보/후속업무 판단에 반영한다
     detectIntents(phoneSession.rawMemo || '').forEach(tag => {
@@ -3184,6 +3319,32 @@ contentEl.addEventListener('click', (e)=>{
     render();
   } else if(action === 'new-call'){
     phoneSession = newPhoneSession();
+    render();
+  } else if(action === 'qa-add'){
+    phoneSession.qa.push({ id: uid(), label:'', question:'', answer:'', source:'custom' });
+    phoneSession.currentQaIndex = phoneSession.qa.length - 1; // 추가한 질문으로 바로 이동
+    persistActiveCall();
+    render();
+    requestAnimationFrame(()=>{
+      const inputs = document.querySelectorAll('.pa-qa-question-input');
+      const last = inputs[inputs.length-1];
+      if(last) last.focus();
+    });
+  } else if(action === 'qa-delete'){
+    phoneSession.qa = phoneSession.qa.filter(q => q.id !== btn.dataset.id);
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-jump'){
+    phoneSession.currentQaIndex = Number(btn.dataset.index);
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-next' || action === 'qa-skip'){
+    phoneSession.currentQaIndex = Math.min(phoneSession.currentQaIndex + 1, phoneSession.qa.length - 1);
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-prev'){
+    phoneSession.currentQaIndex = Math.max(phoneSession.currentQaIndex - 1, 0);
+    persistActiveCall();
     render();
   } else if(action === 'followup-add'){
     phoneSession.followups.push({ text:'', status:'unhandled' });
