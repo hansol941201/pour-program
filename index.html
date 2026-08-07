@@ -478,6 +478,20 @@
   .pa-check-item{font-size:13.5px;color:var(--text-dark);line-height:1.9;}
   .pa-followup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--card-border);font-size:13.5px;}
   .pa-followup-item:last-child{border-bottom:none;}
+  .pa-followup-input{
+    flex:1;min-width:0;border:1px solid transparent;background:none;padding:5px 7px;border-radius:6px;
+    font-size:13.5px;font-family:inherit;color:var(--text-dark);
+  }
+  .pa-followup-input:hover{border-color:var(--card-border);}
+  .pa-followup-input:focus{outline:none;border-color:var(--accent);background:#fff;}
+  .pa-followup-actions{display:flex;gap:6px;flex-shrink:0;}
+  .pa-rawmemo{
+    width:100%;min-height:110px;padding:12px 14px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:14px;font-family:inherit;line-height:1.6;resize:vertical;color:var(--text-dark);
+  }
+  .pa-rawmemo:focus{outline:none;border-color:var(--accent);}
+  .pa-rawmemo::placeholder{color:var(--text-light-gray);}
+  .pa-endcall-row{display:flex;gap:8px;margin:4px 0 24px;}
   .pa-admin-group{margin-bottom:16px;}
   .pa-admin-group:last-child{margin-bottom:0;}
   .pa-admin-head{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
@@ -676,7 +690,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -796,6 +810,8 @@ const DEFAULT_STATE = {
   ],
   // 오늘 업무 비서가 관리하는 업무 카드. 전화 비서 통화 종료 시 후속업무를 저장하면 여기에 자동으로 쌓인다.
   workItems:[],
+  // 전화 비서에서 [저장]으로 확정한 통화 기록 (원문/정리본/후속업무 분리 보관)
+  callLogs:[],
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
@@ -818,13 +834,14 @@ function loadState(){
       if(!Array.isArray(parsed.materials)) parsed.materials = [];
       if(!Array.isArray(parsed.sites)) parsed.sites = [];
       if(!Array.isArray(parsed.workItems)) parsed.workItems = [];
+      if(!Array.isArray(parsed.callLogs)) parsed.callLogs = [];
       return parsed;
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 /* 컬렉션 이름 ↔ state 필드 매핑 (Firestore 실시간 동기화용) */
-const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings'];
+const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs'];
 function getCloudSlice(key){
   if(key === 'companies') return state.companies;
   if(key === 'workflow') return state.guides;
@@ -837,6 +854,7 @@ function getCloudSlice(key){
   if(key === 'materials') return state.materials;
   if(key === 'sites') return state.sites;
   if(key === 'workItems') return state.workItems;
+  if(key === 'callLogs') return state.callLogs;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -855,6 +873,7 @@ function applyCloudSlice(key, data){
   else if(key === 'materials') state.materials = data;
   else if(key === 'sites') state.sites = data;
   else if(key === 'workItems') state.workItems = data;
+  else if(key === 'callLogs') state.callLogs = data;
 }
 
 function saveState(){
@@ -1888,6 +1907,27 @@ contentEl.addEventListener('input', (e)=>{
   if(e.target && e.target.id === 'companySearchInput'){
     companySearchQuery = e.target.value;
     updateCompanySearchUI();
+    return;
+  }
+  // 전화 비서: 통화 메모(자유 입력)는 render()로 다시 그리지 않고 값만 세션에 반영 + 임시 저장 (입력 중 포커스 유지)
+  if(e.target && e.target.id === 'paRawMemo'){
+    if(!phoneSession) phoneSession = newPhoneSession();
+    phoneSession.rawMemo = e.target.value;
+    persistActiveCall();
+    return;
+  }
+  // 전화 비서: 통화 종료 후 정리본(요약)도 사용자가 직접 수정 가능 — rawMemo는 절대 덮어쓰지 않는다
+  if(e.target && e.target.id === 'paSummaryEdit'){
+    if(phoneSession){ phoneSession.report = e.target.value; persistActiveCall(); }
+    return;
+  }
+  // 전화 비서: 후속 업무 항목 텍스트 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-followup-input')){
+    const idx = Number(e.target.dataset.paFollowupIndex);
+    if(phoneSession && phoneSession.followups[idx]){
+      phoneSession.followups[idx].text = e.target.value;
+      persistActiveCall();
+    }
   }
 });
 
@@ -2437,10 +2477,13 @@ function findScriptForTags(tags){
   return null;
 }
 
-let phoneSession = null; // 통화 세션(임시). [통화 종료]를 누르기 전까지 render()가 반복돼도 유지된다.
+// 통화 세션(임시, state에는 저장하지 않음). [저장]을 누르기 전까지는 새로고침해도 사라지지 않도록
+// localStorage에 임시 보관해둔 내용이 있으면 그대로 복구한다(아래 restoreActiveCall 정의부 참고).
+let phoneSession = null;
 function newPhoneSession(){
   return {
     active:true, notes:[], matchedIntents:[], region:null, site:null, company:null, firstLine:'',
+    rawMemo:'', // 통화 메모(자유 입력 textarea) 원문 — 검색창에서 넘어온 notes와는 별개로 절대 덮어쓰지 않는다
     endedAt:null, report:null, followups:[],
     lastScript:null, lastMaterial:null, lastJurisdiction:null
   };
@@ -2457,7 +2500,41 @@ function addPhoneNote(text){
   detectIntents(line).forEach(tag => {
     if(!phoneSession.matchedIntents.includes(tag)) phoneSession.matchedIntents.push(tag);
   });
+  persistActiveCall();
 }
+// 통화 메모(rawMemo)와 검색창에서 입력했던 줄(notes)을 합친 전체 원문 — 요약 생성/저장에 사용
+function combinedRawMemo(s){
+  const lines = s.notes.map(n => n.text);
+  const extra = (s.rawMemo || '').split('\n').map(l => l.trim()).filter(Boolean);
+  return [...lines, ...extra].join('\n');
+}
+
+/* ---------- 통화 메모 임시 저장 (새로고침/실수 이동 대비, 저장 완료 전까지만 유지) ---------- */
+const ACTIVE_CALL_STORAGE_KEY = 'work-guide-active-call-v1';
+let activeCallSaveTimer = null;
+function persistActiveCall(){
+  if(!phoneSession) return;
+  clearTimeout(activeCallSaveTimer);
+  activeCallSaveTimer = setTimeout(() => {
+    try{ localStorage.setItem(ACTIVE_CALL_STORAGE_KEY, JSON.stringify(phoneSession)); }
+    catch(e){}
+  }, 300);
+}
+function clearActiveCallStorage(){
+  clearTimeout(activeCallSaveTimer);
+  try{ localStorage.removeItem(ACTIVE_CALL_STORAGE_KEY); }catch(e){}
+}
+function restoreActiveCall(){
+  try{
+    const raw = localStorage.getItem(ACTIVE_CALL_STORAGE_KEY);
+    if(!raw) return null;
+    const parsed = JSON.parse(raw);
+    if(parsed && (parsed.notes?.length || (parsed.rawMemo || '').trim() || parsed.endedAt)) return parsed;
+  }catch(e){}
+  return null;
+}
+phoneSession = restoreActiveCall(); // 페이지를 새로 열었을 때 저장 전 통화 메모가 있으면 그대로 복구
+
 function findPhoneProcedure(){
   const tags = phoneSession.matchedIntents;
   if(!tags.length) return null;
@@ -2493,14 +2570,17 @@ function buildPhoneCallReport(s){
     '현장등록':'현장등록 관련 문의를 주셨습니다.',
     '질문서':'질문서 관련 문의를 주셨습니다.'
   };
-  s.notes.forEach(n => n.intents.forEach(tag => {
+  s.matchedIntents.forEach(tag => {
     if(seen.has(tag) || !SUMMARY_TEXT[tag]) return;
     seen.add(tag);
     lines.push(SUMMARY_TEXT[tag]);
-  }));
+  });
   if(lines.length === 2) lines.push('세부 문의 내용은 아래 통화 메모를 참고해주세요.');
-  lines.push('', '[통화 메모]');
-  s.notes.forEach(n => lines.push(`- ${n.text}`));
+  const memo = combinedRawMemo(s);
+  if(memo){
+    lines.push('', '[통화 메모]');
+    memo.split('\n').forEach(l => lines.push(`- ${l}`));
+  }
   return lines.join('\n');
 }
 function buildPhoneFollowups(s){
@@ -2527,6 +2607,30 @@ async function polishPhoneReport(apiKey){
     const result = await callOpenAI(apiKey, prompt);
     if(result){ s.report = result; render(); }
   }catch(err){ console.error(err); showToast('AI 다듬기에 실패했습니다'); }
+}
+
+// [저장] — 검토(수정)까지 끝난 통화 기록을 확정 저장한다. rawMemo(원문)/summary(정리본)/followUps(후속업무)를
+// 분리해서 그대로 기록하고, 업체/현장이 인식됐으면 기존 ID로 연결한다. 저장 전까지는 임시 데이터만 존재한다.
+function savePhoneCallLog(){
+  const s = phoneSession;
+  if(!s || !s.endedAt) return;
+  state.callLogs.push({
+    id: uid(),
+    at: Date.now(),
+    companyId: s.company ? s.company.id : null,
+    companyName: s.company ? s.company.name : '',
+    siteId: s.site ? s.site.id : null,
+    siteName: s.site ? s.site.name : '',
+    firstLine: s.firstLine || '',
+    rawMemo: combinedRawMemo(s),   // 사용자가 입력한 원문 그대로 (AI가 절대 덮어쓰지 않음)
+    summary: s.report || '',       // 정리본(사용자가 수정한 최종본)
+    followUps: s.followups.map(f => f.text).filter(Boolean)
+  });
+  saveState();
+  clearActiveCallStorage();
+  showToast('통화 내용이 저장되었습니다.');
+  phoneSession = newPhoneSession();
+  render();
 }
 
 // 전화 비서 "본체"(통화 입력창 + 결과 카드) — 홈 화면과 전화 비서 전체 화면이 동일하게 재사용한다.
@@ -2561,7 +2665,6 @@ function renderPhoneAssistantCore(){
           <div class="pa-callbar-label">현재 통화</div>
           <div class="pa-callbar-who">${counterpart}</div>
         </div>
-        <button type="button" class="btn btn-ghost" data-pa-action="end-call">통화 종료</button>
       </div>
       <form class="inline-form" data-pa-form="add-note" style="margin-top:14px;">
         <input type="text" id="paInput" placeholder="업체명 / 아파트명 / 문의내용을 입력하세요 (예: 부산 덕천주공1단지, 시방서, 체결 문의)" autocomplete="off" />
@@ -2646,6 +2749,14 @@ function renderPhoneAssistantCore(){
     ` : ''}
 
     ${nothingYet ? `<div class="empty-state">입력한 내용과 일치하는 저장된 정보가 아직 없습니다. 단어를 더 입력해보세요.</div>` : ''}
+
+    <div class="card">
+      <div class="card-title">📝 통화 메모</div>
+      <textarea id="paRawMemo" class="pa-rawmemo" placeholder="전화하면서 메모를 계속 입력하세요…">${escapeHtml(s.rawMemo)}</textarea>
+    </div>
+    <div class="pa-endcall-row">
+      <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 종료</button>
+    </div>
   `;
 }
 
@@ -2735,34 +2846,43 @@ function renderMaterialsToolView(){
   `;
 }
 
+// 통화 종료 → 저장 전 검토 화면. 요약/후속업무 모두 사용자가 직접 수정할 수 있고,
+// [저장]을 눌러야만 Firestore(state.callLogs)에 확정 저장된다 — 원문(rawMemo)은 별도로 그대로 보존된다.
 function renderPhoneCallEndedCore(s){
   return `
     <div class="card highlight">
       <div class="card-head">
-        <div class="card-title" style="margin:0;">📝 통화내용 정리</div>
+        <div class="card-title" style="margin:0;">📝 통화내용 정리 (수정 가능)</div>
         <div class="card-actions">
           <button class="copy-btn" data-pa-action="copy-report">📋 복사</button>
           <button class="icon-btn" data-pa-action="ai-polish-report" title="AI로 다듬기">✨</button>
         </div>
       </div>
-      <div class="card-body">${escapeHtml(s.report)}</div>
+      <textarea id="paSummaryEdit" class="pa-rawmemo" style="min-height:150px;">${escapeHtml(s.report)}</textarea>
     </div>
-    ${s.followups.length ? `
-      <div class="card">
-        <div class="card-title">✅ 후속 업무</div>
-        ${s.followups.map((f,i) => `
-          <div class="pa-followup-item">
-            <span>${escapeHtml(f.text)}</span>
-            <button class="copy-btn" data-pa-action="add-todo" data-index="${i}">+ 오늘 할 일에 추가</button>
-          </div>
-        `).join('')}
-      </div>
-    ` : ''}
     <div class="card">
-      <div class="card-title" style="margin-bottom:10px;">이번 통화 메모</div>
-      ${s.notes.map(n=>`<div class="pa-note-line">· ${escapeHtml(n.text)}</div>`).join('')}
+      <div class="card-head">
+        <div class="card-title" style="margin:0;">✅ 후속 업무 (수정 가능)</div>
+        <button type="button" class="copy-btn" data-pa-action="followup-add">+ 항목 추가</button>
+      </div>
+      ${s.followups.length ? s.followups.map((f,i) => `
+        <div class="pa-followup-item">
+          <input type="text" class="pa-followup-input" data-pa-followup-index="${i}" value="${escapeHtml(f.text)}" />
+          <span class="pa-followup-actions">
+            <button class="copy-btn" data-pa-action="add-todo" data-index="${i}">+ 오늘 업무에 추가</button>
+            <button class="icon-btn danger" data-pa-action="followup-delete" data-index="${i}" title="삭제">🗑</button>
+          </span>
+        </div>
+      `).join('') : '<div class="empty-state" style="padding:10px 0;">추출된 후속 업무가 없습니다</div>'}
     </div>
-    <button type="button" class="fab-add" data-pa-action="new-call">+ 새 통화 시작</button>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">통화 메모 원문 (보존됨)</div>
+      <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(combinedRawMemo(s)) || '(입력된 메모 없음)'}</div>
+    </div>
+    <div class="pa-endcall-row">
+      <button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>
+      <button type="button" class="btn btn-ghost" data-pa-action="new-call">저장 안 하고 새 통화 시작</button>
+    </div>
   `;
 }
 
@@ -2878,14 +2998,35 @@ contentEl.addEventListener('click', (e)=>{
   if(!btn) return;
   const action = btn.dataset.paAction;
   if(action === 'end-call'){
-    if(!phoneSession || !phoneSession.notes.length){ showToast('입력된 통화 메모가 없습니다'); return; }
+    if(!phoneSession || (!phoneSession.notes.length && !(phoneSession.rawMemo||'').trim())){
+      showToast('입력된 통화 메모가 없습니다'); return;
+    }
+    // 통화 메모(rawMemo)에 등장한 키워드도 업무정보/후속업무 판단에 반영한다
+    detectIntents(phoneSession.rawMemo || '').forEach(tag => {
+      if(!phoneSession.matchedIntents.includes(tag)) phoneSession.matchedIntents.push(tag);
+    });
     phoneSession.endedAt = Date.now();
     phoneSession.report = buildPhoneCallReport(phoneSession);
     phoneSession.followups = buildPhoneFollowups(phoneSession);
+    persistActiveCall(); // 저장 전 검토 단계도 새로고침에 대비해 계속 임시 보관한다
     render();
   } else if(action === 'new-call'){
     phoneSession = newPhoneSession();
     render();
+  } else if(action === 'followup-add'){
+    phoneSession.followups.push({ text:'', status:'unhandled' });
+    render();
+    requestAnimationFrame(()=>{
+      const inputs = document.querySelectorAll('.pa-followup-input');
+      const last = inputs[inputs.length-1];
+      if(last) last.focus();
+    });
+  } else if(action === 'followup-delete'){
+    phoneSession.followups.splice(Number(btn.dataset.index), 1);
+    persistActiveCall();
+    render();
+  } else if(action === 'save-call'){
+    savePhoneCallLog();
   } else if(action === 'copy-script'){
     if(phoneSession.lastScript) copyText(phoneSession.lastScript.body);
   } else if(action === 'copy-material'){
@@ -2911,7 +3052,7 @@ contentEl.addEventListener('click', (e)=>{
       who,
       title: f.text,
       status: f.status,
-      reason: `전화 메모 "${phoneSession.notes.map(n=>n.text).join(' / ')}" 에서 확인됨`,
+      reason: `전화 메모 "${combinedRawMemo(phoneSession).split('\n').join(' / ')}" 에서 확인됨`,
       nextAction: f.text,
       materialId: f.materialId || null,
       createdAt: Date.now(),
