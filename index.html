@@ -472,10 +472,32 @@
   .pa-callbar-who{font-size:17px;font-weight:700;color:var(--text-dark);}
   .pa-callbar .inline-form input{font-size:16px;padding:12px 14px;}
   .pa-callbar .inline-form button{font-size:14px;padding:12px 20px;}
-  .pa-notes-log{margin-top:14px;padding-top:12px;border-top:1px solid var(--card-border);max-height:160px;overflow-y:auto;}
-  .pa-note-line{font-size:13px;color:var(--text-gray);line-height:1.7;}
+  .pa-notes-log{margin-top:14px;padding-top:12px;border-top:1px solid var(--card-border);max-height:200px;overflow-y:auto;}
+  .pa-notes-log-label{font-size:11px;font-weight:700;color:var(--text-light-gray);letter-spacing:.04em;margin-bottom:4px;}
+  .pa-note-line{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:13px;color:var(--text-gray);line-height:1.7;
+  }
+  .pa-note-del{
+    flex:none;background:none;border:none;color:var(--text-light-gray);cursor:pointer;
+    font-size:11px;padding:2px 5px;border-radius:5px;line-height:1;
+  }
+  .pa-note-del:hover{color:var(--danger);background:#fdeceb;}
   .pa-missing{font-size:13.5px;font-weight:700;color:var(--danger);}
   .pa-check-item{font-size:13.5px;color:var(--text-dark);line-height:1.9;}
+
+  /* 대화형 전화 대본: 세로로 흐르는 말할 문장 ↔ 확인 항목 */
+  .pa-script{display:flex;flex-direction:column;gap:14px;}
+  .pa-script-say{padding:12px 14px;background:var(--hover-blue-soft);border-radius:10px;}
+  .pa-script-say-label{font-size:11px;font-weight:700;color:var(--accent-dark);letter-spacing:.03em;margin-bottom:5px;}
+  .pa-script-say-text{font-size:16px;font-weight:700;line-height:1.6;color:var(--text-dark);margin-bottom:8px;}
+  .pa-script-check{padding-left:14px;border-left:2px solid var(--card-border);}
+  .pa-script-check-label{font-size:10.5px;font-weight:700;color:var(--text-light-gray);letter-spacing:.04em;margin-bottom:4px;}
+  .pa-script-check-items{display:flex;flex-wrap:wrap;gap:6px;}
+  .pa-script-check-items span{
+    font-size:12px;color:var(--text-gray);background:var(--bg);border:1px solid var(--card-border);
+    border-radius:999px;padding:3px 10px;
+  }
   .pa-followup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--card-border);font-size:13.5px;}
   .pa-followup-item:last-child{border-bottom:none;}
   .pa-followup-input{
@@ -2485,7 +2507,7 @@ function newPhoneSession(){
     active:true, notes:[], matchedIntents:[], region:null, site:null, company:null, firstLine:'',
     rawMemo:'', // 통화 메모(자유 입력 textarea) 원문 — 검색창에서 넘어온 notes와는 별개로 절대 덮어쓰지 않는다
     endedAt:null, report:null, followups:[],
-    lastScript:null, lastMaterial:null, lastJurisdiction:null
+    lastScript:null, lastMaterial:null, lastJurisdiction:null, lastScriptBlocks:[]
   };
 }
 function addPhoneNote(text){
@@ -2553,6 +2575,26 @@ function findPhoneMaterial(){
     if(hit) return hit;
   }
   return null;
+}
+
+// "지금 말할 내용"을 대화형 대본(말할 문장 → 확인 항목 → 다음 말할 문장 …)으로 구성한다.
+// 새 문장을 지어내지 않고, 기존에 저장된 데이터만 순서대로 엮는다:
+//   - 여는 문장: 기존 자주 쓰는 멘트/가이드 메모 중 매칭되는 것(기존 findScriptForTags 그대로 재사용)
+//   - 확인 항목 + 그다음 말할 문장: 매칭된 업무 순서(가이드)의 각 단계 라벨 + 그 단계에 이미 저장돼 있는
+//     전화 메모(step.phoneNote, 기존 "전화 메모" 기능으로 사용자가 직접 적어둔 문장)
+// 저장된 phoneNote가 없는 단계는 확인 항목만 보여주고 문장을 지어내지 않는다.
+function buildPhoneScript(s, openingScript, procedure){
+  const blocks = [];
+  if(openingScript) blocks.push({ type:'say', text: openingScript.body });
+  if(procedure){
+    procedure.steps.forEach(st => {
+      blocks.push({ type:'check', items:[st.label] });
+      if(st.hasPhone && (st.phoneNote || '').trim()){
+        blocks.push({ type:'say', text: st.phoneNote.trim() });
+      }
+    });
+  }
+  return blocks;
 }
 
 function buildPhoneCallReport(s){
@@ -2651,10 +2693,12 @@ function renderPhoneAssistantCore(){
   const wantsMaterial = s.matchedIntents.some(t => MATERIAL_REQUEST_TAGS.includes(t));
   const jurisdiction = s.region ? (state.jurisdictions.find(j=>j.region===s.region) || 'missing') : null;
   const checkSteps = procedure ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
+  const scriptBlocks = buildPhoneScript(s, script, procedure);
 
   s.lastScript = script;
   s.lastMaterial = material;
   s.lastJurisdiction = (jurisdiction && jurisdiction !== 'missing') ? jurisdiction : null;
+  s.lastScriptBlocks = scriptBlocks;
 
   const nothingYet = !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
 
@@ -2670,14 +2714,39 @@ function renderPhoneAssistantCore(){
         <input type="text" id="paInput" placeholder="업체명 / 아파트명 / 문의내용을 입력하세요 (예: 부산 덕천주공1단지, 시방서, 체결 문의)" autocomplete="off" />
         <button type="submit">검색 / 시작</button>
       </form>
-      ${s.notes.length ? `<div class="pa-notes-log">${s.notes.map(n => `<div class="pa-note-line">· ${escapeHtml(n.text)}</div>`).join('')}</div>` : ''}
+      ${s.notes.length ? `
+        <div class="pa-notes-log">
+          <div class="pa-notes-log-label">과거 기록</div>
+          ${s.notes.map((n,i) => `
+            <div class="pa-note-line">
+              <span>· ${escapeHtml(n.text)}</span>
+              <button type="button" class="pa-note-del" data-pa-action="note-delete" data-index="${i}" title="이 기록 삭제">✕</button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
     </div>
 
-    ${script ? `
+    ${scriptBlocks.length ? `
       <div class="card highlight">
-        <div class="card-title">🗣️ 지금 말할 내용</div>
-        <div class="card-body">${escapeHtml(script.body)}</div>
-        <div class="card-actions" style="margin-top:10px;"><button class="copy-btn" data-pa-action="copy-script">📋 복사</button></div>
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용 (대본)</div>
+          <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 대본 전체 복사</button></div>
+        </div>
+        <div class="pa-script">
+          ${scriptBlocks.map((b,i) => b.type === 'say' ? `
+            <div class="pa-script-say">
+              <div class="pa-script-say-label">${i===0 ? '내가 말할 내용' : '다음에 말할 내용'}</div>
+              <div class="pa-script-say-text">${escapeHtml(b.text)}</div>
+              <button class="copy-btn" data-pa-action="copy-script-line" data-index="${i}">📋 이 문장 복사</button>
+            </div>
+          ` : `
+            <div class="pa-script-check">
+              <div class="pa-script-check-label">확인</div>
+              <div class="pa-script-check-items">${b.items.map(it => `<span>${escapeHtml(it)}</span>`).join('')}</div>
+            </div>
+          `).join('')}
+        </div>
       </div>
     ` : ''}
 
@@ -3028,7 +3097,19 @@ contentEl.addEventListener('click', (e)=>{
   } else if(action === 'save-call'){
     savePhoneCallLog();
   } else if(action === 'copy-script'){
-    if(phoneSession.lastScript) copyText(phoneSession.lastScript.body);
+    // 대본 전체가 아니라 내가 실제로 말할 문장들만 이어서 복사한다
+    const blocks = (phoneSession.lastScriptBlocks || []).filter(b => b.type === 'say');
+    if(blocks.length) copyText(blocks.map(b => b.text).join('\n\n'));
+  } else if(action === 'copy-script-line'){
+    const b = (phoneSession.lastScriptBlocks || [])[Number(btn.dataset.index)];
+    if(b && b.type === 'say') copyText(b.text);
+  } else if(action === 'note-delete'){
+    const idx = Number(btn.dataset.index);
+    if(phoneSession && phoneSession.notes[idx] && confirm('이 기록을 삭제하시겠습니까?')){
+      phoneSession.notes.splice(idx, 1);
+      persistActiveCall();
+      render();
+    }
   } else if(action === 'copy-material'){
     if(phoneSession.lastMaterial) copyText(phoneSession.lastMaterial.url || phoneSession.lastMaterial.location);
   } else if(action === 'copy-jurisdiction-phone'){
