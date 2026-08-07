@@ -134,6 +134,23 @@
   }
   @keyframes aiSpin{to{transform:rotate(360deg);}}
 
+  /* AI 문구수정 카드 (홈 화면, 전화비서 바로 아래) — 사이드바용 색상 변수와 별개로 콘텐츠 카드 톤에 맞춘다 */
+  #aiComposerCard .ai-note-textarea{
+    width:100%;min-height:96px;resize:vertical;border-radius:8px;border:1px solid var(--card-border);
+    background:var(--bg);color:var(--text-dark);font-size:14px;font-family:inherit;padding:12px 14px;line-height:1.6;
+  }
+  #aiComposerCard .ai-note-textarea::placeholder{color:var(--text-light-gray);}
+  #aiComposerCard .ai-note-textarea:focus{outline:none;border-color:var(--accent);}
+  #aiComposerCard .ai-note-status{font-size:12px;font-weight:600;color:var(--accent-dark);display:flex;align-items:center;gap:6px;margin-top:8px;}
+  #aiComposerCard .ai-note-status .spin{
+    width:10px;height:10px;border-radius:50%;border:2px solid var(--card-border);border-top-color:var(--accent-dark);
+    animation:aiSpin .7s linear infinite;
+  }
+  .ai-composer-mode-row{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .ai-composer-mode-row .copy-btn.active{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
+  .ai-composer-result{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .ai-composer-result-label{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:6px;}
+
   /* Content */
   .content{flex:1;padding:36px 44px;min-width:0;}
   .view-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
@@ -590,6 +607,22 @@
   .pa-rawmemo:focus{outline:none;border-color:var(--accent);}
   .pa-rawmemo::placeholder{color:var(--text-light-gray);}
   .pa-endcall-row{display:flex;gap:8px;margin:4px 0 24px;}
+  .pa-qa-block{padding:14px 0;border-bottom:1px solid var(--card-border);}
+  .pa-qa-block:last-child{border-bottom:none;}
+  .pa-qa-block-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+  .pa-qa-block-num{font-size:11px;font-weight:700;color:var(--accent-dark);flex:none;}
+  .pa-qa-block-label{font-size:13.5px;font-weight:700;color:var(--text-dark);}
+  .pa-qa-block-hint{font-size:11.5px;color:var(--text-light-gray);margin:4px 0 2px;}
+  .pa-qa-block-question{font-size:15px;font-weight:600;color:var(--text-dark);margin-bottom:8px;}
+  .pa-qa-block-answer-label{font-size:11px;font-weight:700;color:var(--text-gray);margin-bottom:4px;}
+  .pa-proc-edit-row{display:flex;align-items:center;gap:6px;padding:6px 0;}
+  .pa-field-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--card-border);}
+  .pa-field-row:last-child{border-bottom:none;}
+  .pa-field-label{flex:0 0 130px;font-size:12.5px;font-weight:700;color:var(--text-gray);}
+  .pa-field-val{font-size:13.5px;font-weight:700;color:var(--text-dark);}
+  .pa-field-input{flex:1;min-width:0;padding:8px 10px;border-radius:8px;border:1px solid var(--card-border);font-size:13.5px;font-family:inherit;color:var(--text-dark);}
+  .pa-field-input:focus{outline:none;border-color:var(--accent);}
+  .pa-field-badge{display:inline-block;font-size:10px;font-weight:700;color:var(--danger);background:rgba(220,53,69,.08);border-radius:4px;padding:1px 5px;margin-left:4px;}
   .pa-admin-group{margin-bottom:16px;}
   .pa-admin-group:last-child{margin-bottom:0;}
   .pa-admin-head{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
@@ -606,6 +639,11 @@
   .today-card:hover{border-color:var(--accent);}
   .today-card.expanded{border-color:var(--accent);box-shadow:0 0 0 3px var(--hover-blue-soft);}
   .today-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .today-card-del{
+    margin-left:auto;flex:none;background:none;border:none;color:var(--text-light-gray);
+    cursor:pointer;font-size:13px;padding:2px 6px;line-height:1;
+  }
+  .today-card-del:hover{color:var(--danger);}
   .today-status-tag{
     flex:none;font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;
     background:var(--navy-soft);color:var(--navy);letter-spacing:.02em;
@@ -727,17 +765,6 @@
       <button type="button" class="sidebar-footer-link" id="settingsFooterLink">설정</button>
     </div>
 
-    <div class="ai-note-composer">
-      <div class="ai-note-head">
-        <div class="ai-note-label">✨ AI 업무비서</div>
-        <button type="button" class="ai-note-settings-btn" id="aiSettingsBtn" title="API 키 설정">⚙️</button>
-      </div>
-      <div class="ai-note-input-wrap">
-        <textarea id="aiNoteInput" class="ai-note-textarea" rows="4"
-          placeholder="예: 메일 실적 보내요 / 카카오톡 협약 감사합니다 / 전화보고 동신도장 전화옴&#10;(Enter로 실행 · Shift+Enter로 줄바꿈)"></textarea>
-        <span class="ai-note-status" id="aiNoteStatus" style="display:none;">문구 수정 중...</span>
-      </div>
-    </div>
   </aside>
 
   <main class="content" id="content"></main>
@@ -784,7 +811,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -906,6 +933,10 @@ const DEFAULT_STATE = {
   workItems:[],
   // 전화 비서에서 [저장]으로 확정한 통화 기록 (원문/정리본/후속업무 분리 보관)
   callLogs:[],
+  // 업무유형(tag)별 질문 세트 / 진행순서 세트 — 처음 그 업무유형을 만났을 때 1회만 자동 생성되고,
+  // 이후에는 사용자가 [질문 편집]/[편집]으로 직접 관리한다(자동 생성이 다시 덮어쓰지 않는다).
+  phoneQuestionSets:{},
+  phoneProcedureSets:{},
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
@@ -929,13 +960,15 @@ function loadState(){
       if(!Array.isArray(parsed.sites)) parsed.sites = [];
       if(!Array.isArray(parsed.workItems)) parsed.workItems = [];
       if(!Array.isArray(parsed.callLogs)) parsed.callLogs = [];
+      if(!parsed.phoneQuestionSets || typeof parsed.phoneQuestionSets !== 'object') parsed.phoneQuestionSets = {};
+      if(!parsed.phoneProcedureSets || typeof parsed.phoneProcedureSets !== 'object') parsed.phoneProcedureSets = {};
       return parsed;
     }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULT_STATE));
 }
 /* 컬렉션 이름 ↔ state 필드 매핑 (Firestore 실시간 동기화용) */
-const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs'];
+const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems', 'callLogs', 'phoneQuestionSets', 'phoneProcedureSets'];
 function getCloudSlice(key){
   if(key === 'companies') return state.companies;
   if(key === 'workflow') return state.guides;
@@ -949,6 +982,8 @@ function getCloudSlice(key){
   if(key === 'sites') return state.sites;
   if(key === 'workItems') return state.workItems;
   if(key === 'callLogs') return state.callLogs;
+  if(key === 'phoneQuestionSets') return state.phoneQuestionSets;
+  if(key === 'phoneProcedureSets') return state.phoneProcedureSets;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -968,6 +1003,8 @@ function applyCloudSlice(key, data){
   else if(key === 'sites') state.sites = data;
   else if(key === 'workItems') state.workItems = data;
   else if(key === 'callLogs') state.callLogs = data;
+  else if(key === 'phoneQuestionSets') state.phoneQuestionSets = data;
+  else if(key === 'phoneProcedureSets') state.phoneProcedureSets = data;
 }
 
 function saveState(){
@@ -1759,10 +1796,20 @@ contentEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-action]');
   if(!btn) return;
   const action = btn.dataset.action;
-  const guideId = btn.dataset.guide;
+  const guideId = btn.dataset.guide || btn.dataset.id;
   const guide = guideId ? state.guides.find(g=>g.id===guideId) : null;
 
-  if(action === 'guide-edit'){
+  if(action === 'ai-mode'){
+    aiComposerState.mode = aiComposerState.mode === btn.dataset.mode ? null : btn.dataset.mode;
+    const input = document.getElementById('aiNoteInput');
+    if(input) aiComposerState.draftText = input.value;
+    render();
+  }
+  else if(action === 'ai-rewrite'){ triggerAiRewrite(); }
+  else if(action === 'ai-settings'){ openAiSettingsModal(); }
+  else if(action === 'ai-result-copy'){ copyText(aiComposerState.result || ''); }
+  else if(action === 'ai-result-retry'){ aiComposerState.result = ''; render(); requestAnimationFrame(()=>{ const el=document.getElementById('aiNoteInput'); if(el) el.focus(); }); }
+  else if(action === 'guide-edit'){
     openModal({
       title:'가이드 수정', submitLabel:'저장',
       fields:[
@@ -2002,6 +2049,10 @@ contentEl.addEventListener('drop', (e)=>{
 });
 
 contentEl.addEventListener('input', (e)=>{
+  if(e.target && e.target.id === 'aiNoteInput'){
+    aiComposerState.draftText = e.target.value;
+    return;
+  }
   if(e.target && e.target.matches && e.target.matches('[data-action="company-memo-input"]')){
     const c = state.companies.find(c=>c.id===e.target.dataset.id);
     if(c){ c.memo = e.target.value; saveState(); }
@@ -2039,10 +2090,48 @@ contentEl.addEventListener('input', (e)=>{
     if(item){ item.answer = e.target.value; persistActiveCall(); }
     return;
   }
-  // 전화 비서: [+ 질문 추가]로 만든 질문의 질문 텍스트 수정
+  // 전화 비서: 질문 편집 모드에서 질문 문장 수정 (지금 통화 + 다음 통화부터 쓸 질문 세트 모두에 반영)
   if(e.target && e.target.matches && e.target.matches('.pa-qa-question-input')){
     const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
-    if(item){ item.question = e.target.value; persistActiveCall(); }
+    if(item){
+      item.question = e.target.value;
+      const setItem = phoneSession.scenarioTag && (state.phoneQuestionSets[phoneSession.scenarioTag]||[]).find(q=>q.id===item.id);
+      if(setItem) setItem.question = e.target.value;
+      persistActiveCall(); saveState();
+    }
+    return;
+  }
+  // 전화 비서: 질문 편집 모드에서 질문 라벨(진행순서 짧은 이름) 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-qa-label-input')){
+    const item = phoneSession && phoneSession.qa.find(q => q.id === e.target.dataset.qaId);
+    if(item){
+      item.label = e.target.value;
+      const setItem = phoneSession.scenarioTag && (state.phoneQuestionSets[phoneSession.scenarioTag]||[]).find(q=>q.id===item.id);
+      if(setItem) setItem.label = e.target.value;
+      persistActiveCall(); saveState();
+    }
+    return;
+  }
+  // 전화 비서: 진행순서 항목 텍스트 수정
+  if(e.target && e.target.matches && e.target.matches('.pa-proc-input')){
+    const tag = phoneSession && phoneSession.scenarioTag;
+    const item = tag && (state.phoneProcedureSets[tag]||[]).find(p => p.id === e.target.dataset.procId);
+    if(item){ item.text = e.target.value; saveState(); }
+    return;
+  }
+  // 전화 비서: 통화완료 후 구조화 필드 직접 수정 (사용자 최종 수정본만 바뀌고, AI가 추출한 원본은 보존됨)
+  if(e.target && e.target.matches && e.target.matches('.pa-field-input')){
+    if(phoneSession){
+      phoneSession.finalFields[e.target.dataset.fieldKey] = e.target.value;
+      phoneSession.relayText = buildRelayText(phoneSession.scenarioTag, phoneSession.finalFields);
+      persistActiveCall();
+    }
+    return;
+  }
+  // 전화 비서: 전달용 문구 직접 수정
+  if(e.target && e.target.id === 'paRelayText'){
+    if(phoneSession){ phoneSession.relayText = e.target.value; persistActiveCall(); }
+    return;
   }
 });
 
@@ -2443,7 +2532,8 @@ function openAiSettingsModal(){
     }
   });
 }
-document.getElementById('aiSettingsBtn').addEventListener('click', openAiSettingsModal);
+/* AI 문구수정 카드는 홈 화면(전화비서 바로 아래)에 렌더링되므로, 다른 dynamic 영역과 마찬가지로
+   contentEl에 위임된 리스너로만 동작한다(직접 바인딩 금지 — render()마다 노드가 새로 만들어짐). */
 
 function detectNoteType(text){
   const t = text.trim();
@@ -2488,40 +2578,48 @@ async function callOpenAI(apiKey, prompt){
   return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || '').trim();
 }
 
-let aiRewriteInFlight = false;
+// AI 문구수정 카드(홈 화면, 전화비서 바로 아래)의 임시 UI 상태 — 원본 입력 textarea 내용은
+// 절대 AI 결과로 덮어쓰지 않고(§23), 결과는 별도로 보관해 입력 아래에 그대로 보여준다.
+let aiComposerState = { mode:null, draftText:'', result:'', loading:false };
+const AI_MODE_LABEL = { mail:'메일', kakao:'카카오톡', report:'업무보고' };
 
-async function runAiRewrite(apiKey, text){
-  const input = document.getElementById('aiNoteInput');
-  const status = document.getElementById('aiNoteStatus');
-  const { type, rest } = detectNoteType(text);
-  const prompt = buildAiPrompt(type, rest || text);
-  aiRewriteInFlight = true;
-  input.disabled = true;
-  status.innerHTML = '<span class="spin"></span>문구 수정 중...';
-  status.style.display = 'flex';
-  try{
-    const result = await callOpenAI(apiKey, prompt);
-    if(result){
-      input.value = result;
-    } else {
-      showToast('AI 응답이 비어있습니다');
-    }
-  } catch(err){
-    console.error(err);
-    showToast('문구 수정에 실패했습니다.');
-  } finally {
-    aiRewriteInFlight = false;
-    input.disabled = false;
-    status.style.display = 'none';
-    input.focus();
-  }
+// AI 문구수정 카드 — 전화비서 바로 아래(홈 위치 2)에서 재사용된다.
+function renderAiComposerCard(){
+  return `
+    <div class="card" id="aiComposerCard">
+      <div class="card-head">
+        <div class="card-title" style="margin:0;">✨ AI 문구수정</div>
+        <button type="button" class="icon-btn" data-action="ai-settings" title="API 키 설정">⚙</button>
+      </div>
+      <textarea id="aiNoteInput" class="ai-note-textarea" rows="4"
+        placeholder="문구를 입력하세요 (예: 협약 감사합니다 / 실적 보고드립니다)&#10;(Enter로 실행 · Shift+Enter로 줄바꿈)">${escapeHtml(aiComposerState.draftText)}</textarea>
+      <div class="ai-composer-mode-row">
+        <button type="button" class="copy-btn ${aiComposerState.mode==='mail'?'active':''}" data-action="ai-mode" data-mode="mail">메일</button>
+        <button type="button" class="copy-btn ${aiComposerState.mode==='kakao'?'active':''}" data-action="ai-mode" data-mode="kakao">카카오톡</button>
+        <button type="button" class="copy-btn ${aiComposerState.mode==='report'?'active':''}" data-action="ai-mode" data-mode="report">업무보고</button>
+        <button type="button" class="btn btn-primary" style="margin-left:auto;" data-action="ai-rewrite">AI 수정</button>
+      </div>
+      <span class="ai-note-status" id="aiNoteStatus" style="display:${aiComposerState.loading?'flex':'none'};"><span class="spin"></span>문구 수정 중...</span>
+      ${aiComposerState.result ? `
+        <div class="ai-composer-result">
+          <div class="ai-composer-result-label">수정 결과</div>
+          <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(aiComposerState.result)}</div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button type="button" class="copy-btn" data-action="ai-result-copy">복사</button>
+            <button type="button" class="copy-btn" data-action="ai-result-retry">다시 수정</button>
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
 }
 
 function triggerAiRewrite(){
-  if(aiRewriteInFlight) return;
+  if(aiComposerState.loading) return;
   const input = document.getElementById('aiNoteInput');
-  const text = input.value.trim();
+  const text = (input ? input.value : aiComposerState.draftText).trim();
   if(!text) return;
+  aiComposerState.draftText = input ? input.value : aiComposerState.draftText;
   const apiKey = getOpenAIKey();
   if(!apiKey){
     promptForOpenAIKey((key)=> runAiRewrite(key, text));
@@ -2530,13 +2628,26 @@ function triggerAiRewrite(){
   runAiRewrite(apiKey, text);
 }
 
-// ChatGPT처럼: Enter = 즉시 실행, Shift+Enter = 줄바꿈
-document.getElementById('aiNoteInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter' && !e.shiftKey){
-    e.preventDefault();
-    triggerAiRewrite();
+async function runAiRewrite(apiKey, text){
+  const detected = detectNoteType(text);
+  const type = aiComposerState.mode || detected.type;
+  const rest = aiComposerState.mode ? text : (detected.rest || text);
+  const prompt = buildAiPrompt(type, rest);
+  aiComposerState.loading = true;
+  render();
+  try{
+    const result = await callOpenAI(apiKey, prompt);
+    if(result) aiComposerState.result = result;
+    else showToast('AI 응답이 비어있습니다');
+  } catch(err){
+    console.error(err);
+    showToast('문구 수정에 실패했습니다.');
+  } finally {
+    aiComposerState.loading = false;
+    render();
+    requestAnimationFrame(()=>{ const el = document.getElementById('aiNoteInput'); if(el) el.focus(); });
   }
-});
+}
 
 /* ==========================================================================
    전화 비서 (통화 중 실시간 업무비서)
@@ -2551,12 +2662,12 @@ document.getElementById('aiNoteInput').addEventListener('keydown', (e)=>{
 
 // 짧은 입력을 같은 업무 의도로 묶어주는 동의어 사전. 새 의도가 필요하면 이 배열에 항목만 추가하면 된다.
 const PHONE_INTENT_GROUPS = [
-  { tag:'체결',      keywords:['체결','협약','mou','MOU','제휴','업무협약'] },
-  { tag:'시방서',    keywords:['시방서','시방'] },
-  { tag:'공법설명회', keywords:['공법설명회','설명회','공법 설명','공법설명'] },
+  { tag:'체결',      keywords:['체결','협약','mou','MOU','제휴','업무협약','협약문의'] },
+  { tag:'시방서',    keywords:['시방서','시방','시방서 요청','시방서요청'] },
+  { tag:'공법설명회', keywords:['공법설명회','설명회','공법 설명','공법설명','pt','PT','공법설명회 일정','pt 일정'] },
   { tag:'자료요청',  keywords:['자료','자료달라','자료줘','자료요청','보내달라','발송해'] },
   { tag:'담당자',    keywords:['담당자','담당','지사','연락처','전화번호','누가'] },
-  { tag:'견적',      keywords:['견적','견적문의','비용','가격'] },
+  { tag:'견적',      keywords:['견적','견적문의','견적 요청','견적요청','공사 견적','공사견적','비용','가격'] },
   { tag:'특허',      keywords:['특허','특허번호','인증'] },
   { tag:'현장등록',  keywords:['현장등록','현장 등록'] },
   { tag:'질문서',    keywords:['질문서','질의서'] },
@@ -2606,6 +2717,8 @@ function newPhoneSession(){
     rawMemo:'', // 통화 메모(자유 입력 textarea) 원문 — 업무 유형이 인식되지 않았을 때만 사용. 절대 덮어쓰지 않는다
     scenarioTag:null, qa:[], currentQaIndex:0, // 업무 유형이 인식되면 질문(question)+답변(answer) 목록으로 통화를 진행한다
     endedAt:null, report:null, followups:[],
+    extractedFields:{}, finalFields:{}, relayText:'', // 통화완료 시 채워지는 구조화 결과(원본 추출값/사용자 최종수정값 분리 보관)
+    qaEditMode:false, procEditMode:false,
     lastScript:null, lastMaterial:null, lastJurisdiction:null, lastScriptBlocks:[]
   };
 }
@@ -2625,7 +2738,7 @@ function addPhoneNote(text){
   if(!phoneSession.scenarioTag){
     const tag = primaryBusinessTag(phoneSession.matchedIntents);
     if(tag){
-      const questions = buildIntentQuestions(tag);
+      const questions = getPhoneQuestionSet(tag);
       if(questions.length){
         phoneSession.scenarioTag = tag;
         phoneSession.qa = questions.map(q => ({ id: uid(), label: q.label, question: q.question, answer: '', source: 'auto' }));
@@ -2705,6 +2818,231 @@ function primaryBusinessTag(matchedIntents){
     if(BUSINESS_TYPE_TAGS.includes(matchedIntents[i])) return matchedIntents[i];
   }
   return null;
+}
+
+/* ---------- 업무유형별 구조화 필드 스키마 (통화완료 결과 정리용) ----------
+   key는 의미별 공통 이름(전달용 문구 자동 생성에 사용), label은 화면/저장에 실제로 보여줄 한글 이름이다.
+   core:true 인 필드만 값이 비어 있을 때 [미확인] 배지를 보여준다. 그 외 빈 필드는 그냥 숨긴다. */
+const PHONE_FIELD_SCHEMA = {
+  '견적': [
+    {key:'subject',  label:'아파트명', core:true},
+    {key:'subject2', label:'업체명', core:false},
+    {key:'role',     label:'전화자', core:false},
+    {key:'position', label:'직책', core:false},
+    {key:'contact',  label:'전화번호', core:true},
+    {key:'location', label:'주소', core:false},
+    {key:'topic',    label:'공종', core:false},
+    {key:'scale',    label:'면적/규모', core:false},
+    {key:'status',   label:'현장상황', core:false},
+    {key:'request',  label:'견적요청', core:false},
+    {key:'material', label:'자료요청', core:false},
+    {key:'source',   label:'유입경로', core:false},
+  ],
+  '체결': [
+    {key:'subject',  label:'업체명', core:true},
+    {key:'role',     label:'대표자/담당자', core:false},
+    {key:'position', label:'직책', core:false},
+    {key:'contact',  label:'전화번호', core:true},
+    {key:'email',    label:'이메일', core:false},
+    {key:'request',  label:'협약문의 내용', core:false},
+    {key:'material', label:'질문서 발송 여부', core:false},
+    {key:'meeting',  label:'미팅 관련 요청', core:false},
+  ],
+  '공법설명회': [
+    {key:'subject',    label:'아파트명', core:true},
+    {key:'role',       label:'담당자', core:false},
+    {key:'contact',    label:'전화번호', core:true},
+    {key:'schedule',   label:'PT 일정', core:false},
+    {key:'equipment',  label:'빔프로젝터', core:false},
+    {key:'material',   label:'자료부수', core:false},
+    {key:'order',      label:'발표순서', core:false},
+    {key:'competitor', label:'경쟁사', core:false},
+    {key:'qna',        label:'질의응답시간', core:false},
+  ],
+};
+const PHONE_FIELD_SCHEMA_DEFAULT = [
+  {key:'subject', label:'업체명/아파트명', core:true},
+  {key:'role',    label:'담당자', core:false},
+  {key:'contact', label:'전화번호', core:true},
+  {key:'topic',   label:'문의내용', core:false},
+  {key:'request', label:'요청사항', core:false},
+];
+function phoneFieldSchemaFor(tag){ return PHONE_FIELD_SCHEMA[tag] || PHONE_FIELD_SCHEMA_DEFAULT; }
+
+/* ---------- 업무유형별 질문 세트 (state.phoneQuestionSets[tag]) ----------
+   최초 1회, 그 업무유형이 처음 인식됐을 때만 buildIntentQuestions() 결과로 시드하고
+   이후에는 절대 자동으로 덮어쓰지 않는다(사용자가 [질문 편집]으로 직접 관리). */
+// 업무 가이드/멘트에 아직 등록된 문장이 없는 업무유형(tag)을 위한 기본 질문 문구.
+// 필드 스키마(PHONE_FIELD_SCHEMA)의 각 항목을 실제로 전화로 여쭤볼 수 있는 자연스러운 문장으로 바꾼 것뿐이며,
+// 새 사실을 지어내지 않는다(그저 "무엇을 물어봐야 하는지" 안내 문구).
+const PHONE_QUESTION_TEXT_BY_KEY = {
+  subject:'어느 아파트/현장에서 전화주셨을까요?', subject2:'어느 업체에서 전화주셨을까요?',
+  role:'전화주신 분 성함이 어떻게 되실까요?', position:'직책이 어떻게 되실까요?',
+  contact:'연락 가능한 전화번호를 알려주시겠어요?', email:'이메일 주소를 알려주시겠어요?',
+  location:'현장 주소가 어떻게 되실까요?', topic:'어떤 공종 관련 문의이실까요?',
+  scale:'공사 면적/규모가 어느 정도 되실까요?', status:'현재 현장 상황이 어떻게 되시나요?',
+  request:'어떤 부분을 요청하시나요?', material:'필요하신 자료가 있으실까요?',
+  source:'저희를 어떻게 알고 연락주셨을까요?', schedule:'PT 일정이 어떻게 되실까요?',
+  equipment:'빔프로젝터는 준비되어 있을까요?', order:'발표 순서는 어떻게 진행될까요?',
+  competitor:'경쟁사도 참여하시나요?', qna:'질의응답 시간은 얼마나 필요하실까요?',
+  meeting:'미팅 관련 요청사항이 있으실까요?'
+};
+function defaultQuestionsForTag(tag){
+  return phoneFieldSchemaFor(tag).map(f => ({ label: f.label, question: PHONE_QUESTION_TEXT_BY_KEY[f.key] || `${f.label}을(를) 확인해주세요.` }));
+}
+function getPhoneQuestionSet(tag){
+  if(!state.phoneQuestionSets) state.phoneQuestionSets = {};
+  if(!state.phoneQuestionSets[tag]){
+    let questions = buildIntentQuestions(tag).map(q => ({ id: uid(), label:q.label, question:q.question }));
+    if(!questions.length) questions = defaultQuestionsForTag(tag).map(q => ({ id: uid(), label:q.label, question:q.question }));
+    state.phoneQuestionSets[tag] = questions;
+    saveState();
+  }
+  return state.phoneQuestionSets[tag];
+}
+
+/* ---------- 업무유형별 진행순서 세트 (state.phoneProcedureSets[tag]) ----------
+   각 태그는 독립된 배열로 보관되어 서로 영향을 주지 않는다. 최초 1회만 시드한다. */
+const PHONE_PROCEDURE_DEFAULTS = {
+  '견적':      ['시공사/아파트 파악', '문의내용 확인', '토픽방 등록', '담당자 전달'],
+  '체결':      ['업체/담당자 확인', '협약 내용 확인', '질문서 발송 여부 확인', '담당자 전달'],
+  '시방서':    ['요청 자료 확인', '자료 위치 확인', '자료 발송', '담당자 전달'],
+  '공법설명회': ['일정 확인', '참석 인원/장소 확인', '발표자료 준비', '담당자 전달'],
+};
+function getPhoneProcedureSet(tag){
+  if(!state.phoneProcedureSets) state.phoneProcedureSets = {};
+  if(!state.phoneProcedureSets[tag]){
+    const guide = findPhoneProcedure();
+    let steps = (guide && guide.steps && guide.steps.length) ? guide.steps.map(st=>st.label) : null;
+    if(!steps || !steps.length) steps = PHONE_PROCEDURE_DEFAULTS[tag] || ['문의내용 확인', '담당자 전달'];
+    state.phoneProcedureSets[tag] = steps.map(t => ({ id: uid(), text: t }));
+    saveState();
+  }
+  return state.phoneProcedureSets[tag];
+}
+
+/* ---------- 구조화 필드 추출 (1단계: 결정론적 라벨 매칭 / 텍스트 채굴, 2단계: 선택적 AI 보강) ----------
+   AI는 opt-in 강화일 뿐이며, 결정론적 결과가 항상 먼저(기본값으로) 만들어진다. */
+const PHONE_FIELD_KEYWORDS = {
+  subject:['아파트명','아파트','업체명','현장명'], subject2:['업체명'], role:['전화자','담당자','대표자'],
+  position:['직책'], contact:['전화번호','연락처','휴대폰'], email:['이메일','메일'],
+  location:['주소','현장 위치','현장위치'], topic:['공종','문의내용','문의 내용'], scale:['면적','규모','면적/규모'],
+  status:['현장상황','현장 상황','진행상황'], request:['요청사항','요청내용','견적요청','협약문의','협약문의 내용'],
+  material:['자료요청','필요자료','질문서','질문서 발송'], source:['유입경로','경로'],
+  schedule:['pt 일정','일정'], equipment:['빔프로젝터'], order:['발표순서'], competitor:['경쟁사'], qna:['질의응답'],
+  meeting:['미팅']
+};
+function extractFieldsDeterministic(s){
+  const tag = s.scenarioTag;
+  const schema = phoneFieldSchemaFor(tag);
+  const fields = {};
+  // 1) 질문 라벨/문장이 필드명과 직접 일치하는 답변을 최우선으로 사용한다(사용자가 직접 답한 값이므로 신뢰도가 가장 높음)
+  (s.qa||[]).forEach(q => {
+    const ans = (q.answer||'').trim();
+    if(!ans) return;
+    const hay = `${q.label||''} ${q.question||''}`;
+    const matched = schema.find(f => !fields[f.key] && textIncludesAny(hay, PHONE_FIELD_KEYWORDS[f.key] || [f.label]));
+    if(matched) fields[matched.key] = ans;
+  });
+  // 2) 한 답변에 여러 사실이 섞여 있어도(예: "관리소장이고 010-.... 재도장 예정") 텍스트 전체에서 추가로 채굴한다.
+  //    이미 채워진 필드는 덮어쓰지 않는다(1번 결과가 항상 우선).
+  const allText = [ ...(s.qa||[]).map(q=>q.answer), s.rawMemo||'', ...(s.notes||[]).map(n=>n.text) ].filter(Boolean).join(' \n ');
+  mineFieldsFromText(allText, schema, fields, s);
+  return fields;
+}
+function mineFieldsFromText(text, schema, fields, s){
+  const has = k => schema.some(f=>f.key===k);
+  if(has('contact') && !fields.contact){
+    const m = text.match(/01[016789]-?\d{3,4}-?\d{4}/);
+    if(m) fields.contact = m[0];
+  }
+  if(has('email') && !fields.email){
+    const m = text.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+    if(m) fields.email = m[0];
+  }
+  if(has('position') && !fields.position){
+    const POS = ['관리소장','소장','대표','팀장','과장','부장','이사','담당자','대리','차장','상무','전무'];
+    const found = POS.find(p => text.includes(p));
+    if(found) fields.position = found;
+  }
+  if(has('topic') && !fields.topic){
+    const WORK = ['재도장','도장','방수','석재','타일','미장','철근','콘크리트','조적','단열','누수보수','도색','옥상방수'];
+    const found = WORK.find(w => text.includes(w));
+    if(found) fields.topic = found;
+  }
+  if(has('subject') && !fields.subject){
+    if(s && s.site && s.site.name) fields.subject = s.site.name;
+    else { const m = text.match(/([가-힣0-9]{2,14}(?:아파트|APT|apt))/); if(m) fields.subject = m[1]; }
+  }
+  if(has('subject2') && !fields.subject2 && s && s.company && s.company.name) fields.subject2 = s.company.name;
+  if(has('scale') && !fields.scale){
+    const m = text.match(/약?\s?[\d,.]+\s?(?:㎡|평|m2|m²)/);
+    if(m) fields.scale = m[0].trim();
+  }
+  if(has('status') && !fields.status){
+    const m = text.match(/(내년|올해|내달|다음달|이번달|당장|조만간|이번 겨울|내년경)[^,.\n]{0,20}(예정|검토중|검토 중|계획)?/);
+    if(m) fields.status = m[0].trim();
+  }
+}
+async function extractFieldsAI(apiKey, s){
+  const tag = s.scenarioTag;
+  const schema = phoneFieldSchemaFor(tag);
+  try{
+    const qaText = (s.qa||[]).filter(q=>(q.answer||'').trim())
+      .map(q => `${q.question || q.label}: ${q.answer}`).join('\n');
+    if(!qaText.trim()) return {};
+    const keys = schema.map(f => `${f.key}(${f.label})`).join(', ');
+    const prompt = `다음은 전화 통화 질문과 답변이다. 아래 필드 중 통화 내용에 실제로 언급된 사실만 뽑아 JSON으로 만들어줘: ${keys}\n\n${qaText}\n\n규칙: 언급되지 않은 필드는 절대 넣지 마. 사실을 지어내지 마. JSON 객체만 출력해(다른 설명 금지).`;
+    const raw = await callOpenAI(apiKey, prompt);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if(!m) return {};
+    const parsed = JSON.parse(m[0]);
+    const out = {};
+    schema.forEach(f => { const v = parsed[f.key]; if(v && String(v).trim()) out[f.key] = String(v).trim(); });
+    return out;
+  }catch(err){ console.error('[AI 필드 추출 실패]', err); return {}; }
+}
+
+/* ---------- 전달용 문구(회사 메신저용) 자동 생성 — 구조화 필드에 실제로 채워진 값만 사용한다 ---------- */
+function buildRelayText(tag, fields){
+  const typeLabel = BUSINESS_TYPE_LABEL[tag] || '업무';
+  const subj = fields.subject || fields.subject2 || '';
+  const roleSuffix = fields.position ? ` ${fields.position}님께서` : (subj ? ' 측에서' : '');
+  const who = subj ? `${subj}${roleSuffix}` : (fields.role ? `${fields.role}님께서` : '문의주신 분께서');
+  const paras = [];
+  paras.push(`${who} ${fields.topic ? fields.topic + ' ' : ''}${typeLabel} 관련하여 문의주셨습니다.`);
+
+  const locScale = [];
+  if(fields.location) locScale.push(`현장은 ${fields.location}이며,`);
+  if(fields.scale) locScale.push(`${fields.location ? '' : '현장 규모는 '}${fields.location ? '공사 면적은 약 ' : '약 '}${fields.scale}입니다.`);
+  if(locScale.length) paras.push(locScale.join('\n'));
+
+  const statusReq = [];
+  if(fields.status) statusReq.push(`${fields.status}으로 공사를 검토 중이며,`);
+  if(fields.request) statusReq.push(`${fields.request}을(를) 요청하셨습니다.`);
+  if(statusReq.length) paras.push(statusReq.join('\n'));
+
+  if(fields.material) paras.push(`추가로 ${fields.material} 자료도 요청하셨습니다.`);
+  if(fields.source) paras.push(`유입경로는 ${fields.source}입니다.`);
+  if(fields.schedule) paras.push(`PT 일정은 ${fields.schedule}입니다.`);
+  if(fields.equipment) paras.push(`빔프로젝터: ${fields.equipment}`);
+  if(fields.order) paras.push(`발표순서: ${fields.order}`);
+  if(fields.competitor) paras.push(`경쟁사: ${fields.competitor}`);
+  if(fields.qna) paras.push(`질의응답시간: ${fields.qna}`);
+  if(fields.meeting) paras.push(`미팅 요청: ${fields.meeting}`);
+  if(fields.email) paras.push(`이메일: ${fields.email}`);
+  if(fields.contact) paras.push(`연락처는 ${fields.contact}입니다.`);
+  return paras.join('\n\n');
+}
+function buildStructuredText(tag, fields){
+  const schema = phoneFieldSchemaFor(tag);
+  const lines = ['통화 접수 정리', `문의유형 : ${BUSINESS_TYPE_LABEL[tag] || tag || '-'}`];
+  schema.forEach(f => {
+    const v = (fields[f.key]||'').trim();
+    if(v) lines.push(`${f.label} : ${v}`);
+    else if(f.core) lines.push(`${f.label} : [미확인]`);
+  });
+  return lines.join('\n');
 }
 // 말하는 문장처럼 보이는 줄(따옴표로 감싸져 있거나 문장부호로 끝남)만 골라낸다
 function splitSpokenLines(body){
@@ -2867,9 +3205,13 @@ function savePhoneCallLog(){
     siteName: s.site ? s.site.name : '',
     firstLine: s.firstLine || '',
     scenarioTag: s.scenarioTag || null,
-    qa: (s.qa||[]).map(q => ({ question: q.question, answer: q.answer })), // 질문+답변 원본 그대로 보존
+    searchQuery: s.notes.length ? s.notes[0].text : (s.firstLine || ''), // 원래 검색어
+    qa: (s.qa||[]).map(q => ({ question: q.question, answer: q.answer })), // 질문 목록 + 각 질문별 원본 답변 (AI가 절대 덮어쓰지 않음)
     rawMemo: combinedRawMemo(s),   // 사용자가 입력한 원문 그대로 (AI가 절대 덮어쓰지 않음)
-    summary: s.report || '',       // 정리본(사용자가 수정한 최종본)
+    summary: s.report || '',       // 정리본(사용자가 수정한 최종본, 업무유형 미인식 통화만 사용)
+    extractedFields: s.extractedFields || {}, // AI/결정론적 로직이 추출한 구조화 필드(원본)
+    finalFields: s.finalFields || {},         // 사용자가 수정한 최종 구조화 필드
+    relayText: s.relayText || '',             // 전달용 문구
     followUps: s.followups.map(f => f.text).filter(Boolean)
   });
   saveState();
@@ -2886,6 +3228,19 @@ function renderPhoneAssistantCore(){
   const s = phoneSession;
   if(s.endedAt) return renderPhoneCallEndedCore(s);
 
+  // §3 검색 전: 아무것도 입력되지 않았으면 "전화비서" 입력창만 보여준다(대본/질문/진행순서/담당자/자료/통화완료 전부 숨김)
+  const preSearch = !s.notes.length && !s.scenarioTag && !s.company && !s.site && !s.region;
+  if(preSearch){
+    return `
+      <div class="card pa-callbar">
+        <form class="inline-form" data-pa-form="add-note">
+          <input type="text" id="paInput" placeholder="업체명 / 아파트명 / 문의내용을 입력하세요 (예: 부산 덕천주공1단지, 시방서, 체결 문의)" autocomplete="off" />
+          <button type="submit">검색 / 시작</button>
+        </form>
+      </div>
+    `;
+  }
+
   const counterpart = s.company ? `🏢 ${escapeHtml(s.company.name)}`
     : s.site ? `🏠 ${escapeHtml(s.site.name)}`
     : s.firstLine ? escapeHtml(s.firstLine)
@@ -2901,6 +3256,8 @@ function renderPhoneAssistantCore(){
   const hasQaScenario = !!(s.scenarioTag && s.qa.length);
   const checkSteps = (procedure && !hasQaScenario) ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
   const scriptBlocks = hasQaScenario ? [] : buildPhoneScript(s, script, procedure);
+  const procSteps = hasQaScenario ? getPhoneProcedureSet(s.scenarioTag) : [];
+  const typeLabel = hasQaScenario ? (BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag) : '';
 
   s.lastScript = script;
   s.lastMaterial = material;
@@ -2910,10 +3267,11 @@ function renderPhoneAssistantCore(){
   const nothingYet = !hasQaScenario && !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
 
   return `
+    <!-- ① 현재 통화 / 문의유형 -->
     <div class="card pa-callbar">
       <div class="pa-callbar-head">
         <div>
-          <div class="pa-callbar-label">현재 통화</div>
+          <div class="pa-callbar-label">현재 통화${typeLabel ? ' · ' + escapeHtml(typeLabel) : ''}</div>
           <div class="pa-callbar-who">${counterpart}</div>
         </div>
       </div>
@@ -2934,57 +3292,8 @@ function renderPhoneAssistantCore(){
       ` : ''}
     </div>
 
-    ${hasQaScenario ? (() => {
-      // currentQaIndex 범위 보정(질문 추가/삭제로 배열 길이가 바뀌어도 항상 유효한 위치를 가리키게)
-      s.currentQaIndex = Math.max(0, Math.min(s.currentQaIndex || 0, s.qa.length - 1));
-      const curIdx = s.currentQaIndex;
-      const cur = s.qa[curIdx];
-      return `
-      <div class="card highlight pa-qa-card">
-        <div class="card-title" style="margin-bottom:12px;">🗣️ ${escapeHtml(BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag)} 진행순서</div>
-
-        <div class="pa-qa-overview">
-          ${s.qa.map((q,i) => {
-            const answered = (q.answer||'').trim().length > 0;
-            const isCur = i === curIdx;
-            return `
-            <button type="button" class="pa-qa-ov-row ${isCur ? 'current' : ''} ${answered ? 'answered' : ''}" data-pa-action="qa-jump" data-index="${i}">
-              <span class="pa-qa-ov-mark">${answered ? '✓' : (isCur ? '→' : String(i+1).padStart(2,'0'))}</span>
-              <span class="pa-qa-ov-label">${escapeHtml(q.label || q.question || '질문')}</span>
-              ${isCur ? '<span class="pa-qa-ov-current-tag">현재</span>' : ''}
-            </button>
-          `;}).join('')}
-        </div>
-
-        ${cur ? `
-          <div class="pa-qa-focus">
-            <div class="pa-qa-focus-head">현재 질문 ${curIdx+1} / ${s.qa.length}</div>
-            <div class="pa-qa-focus-hint">지금 이렇게 말하세요</div>
-            ${cur.source === 'custom' ? `
-              <div class="pa-qa-question-edit-row">
-                <input type="text" class="pa-qa-question-input" data-qa-id="${cur.id}" placeholder="질문을 입력하세요" value="${escapeHtml(cur.question)}" />
-                <button type="button" class="pa-qa-del" data-pa-action="qa-delete" data-id="${cur.id}" title="이 질문 삭제">✕</button>
-              </div>
-            ` : `
-              <div class="pa-qa-question-edit-row">
-                <div class="pa-qa-focus-question" style="margin-bottom:0;flex:1;">${escapeHtml(cur.question)}</div>
-                <button type="button" class="pa-qa-del" data-pa-action="qa-delete" data-id="${cur.id}" title="이 질문 삭제">✕</button>
-              </div>
-            `}
-            <div class="pa-qa-focus-answer-label">상대방 답변</div>
-            <input type="text" class="pa-qa-answer pa-qa-focus-answer" data-qa-id="${cur.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(cur.answer)}" autocomplete="off" />
-            <div class="pa-qa-focus-actions">
-              <button type="button" class="btn btn-ghost" data-pa-action="qa-skip">모름 / 건너뛰기</button>
-              <div style="flex:1;"></div>
-              <button type="button" class="btn btn-ghost" data-pa-action="qa-prev" ${curIdx===0 ? 'disabled' : ''}>이전</button>
-              <button type="button" class="btn btn-primary" data-pa-action="qa-next" ${curIdx>=s.qa.length-1 ? 'disabled' : ''}>다음</button>
-            </div>
-          </div>
-        ` : ''}
-
-        <button type="button" class="pa-qa-add" data-pa-action="qa-add">+ 질문 추가</button>
-      </div>
-    `; })() : (scriptBlocks.length ? `
+    <!-- ② 지금 말할 대본 -->
+    ${scriptBlocks.length ? `
       <div class="card highlight">
         <div class="card-head">
           <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용 (대본)</div>
@@ -3005,9 +3314,66 @@ function renderPhoneAssistantCore(){
           `).join('')}
         </div>
       </div>
-    ` : '')}
+    ` : ''}
 
-    ${procedure && !hasQaScenario ? `
+    <!-- ③ 질문 + 답변 입력 -->
+    ${hasQaScenario ? `
+      <div class="card highlight pa-qa-card">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">🗣️ ${escapeHtml(typeLabel)} 질문</div>
+          <button type="button" class="copy-btn" data-pa-action="qa-edit-toggle">${s.qaEditMode ? '편집 완료' : '질문 편집'}</button>
+        </div>
+        ${s.qa.map((q,i) => `
+          <div class="pa-qa-block">
+            <div class="pa-qa-block-row">
+              <span class="pa-qa-block-num">${String(i+1).padStart(2,'0')}</span>
+              ${s.qaEditMode ? `
+                <input type="text" class="pa-qa-label-input" data-qa-id="${q.id}" placeholder="라벨 (진행순서용 짧은 이름)" value="${escapeHtml(q.label)}" style="flex:1;" />
+                <button type="button" class="icon-btn" data-pa-action="qa-up" data-id="${q.id}" title="위로">↑</button>
+                <button type="button" class="icon-btn" data-pa-action="qa-down" data-id="${q.id}" title="아래로">↓</button>
+                <button type="button" class="icon-btn danger" data-pa-action="qa-delete" data-id="${q.id}" title="이 질문 삭제">✕</button>
+              ` : `<span class="pa-qa-block-label">${escapeHtml(q.label || q.question || '질문')}</span>`}
+            </div>
+            <div class="pa-qa-block-hint">지금 이렇게 말하세요</div>
+            ${s.qaEditMode ? `
+              <input type="text" class="pa-qa-question-input" data-qa-id="${q.id}" placeholder="질문 문장 (예: 어느 아파트에서 전화주셨을까요?)" value="${escapeHtml(q.question)}" />
+            ` : `<div class="pa-qa-block-question">"${escapeHtml(q.question)}"</div>`}
+            <div class="pa-qa-block-answer-label">답변</div>
+            <input type="text" class="pa-qa-answer" data-qa-id="${q.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(q.answer)}" autocomplete="off" />
+          </div>
+        `).join('')}
+        ${s.qaEditMode ? `<button type="button" class="pa-qa-add" data-pa-action="qa-add">+ 질문 추가</button>` : ''}
+      </div>
+    ` : ''}
+
+    <!-- ④ 진행순서 -->
+    ${hasQaScenario ? `
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">📋 진행순서 — ${escapeHtml(typeLabel)}</div>
+          <button type="button" class="copy-btn" data-pa-action="proc-edit-toggle">${s.procEditMode ? '편집 완료' : '편집'}</button>
+        </div>
+        ${s.procEditMode ? `
+          ${procSteps.map((p,i) => `
+            <div class="pa-proc-edit-row">
+              <span class="pa-qa-block-num">${String(i+1).padStart(2,'0')}</span>
+              <input type="text" class="pa-proc-input" data-proc-id="${p.id}" value="${escapeHtml(p.text)}" style="flex:1;" />
+              <button type="button" class="icon-btn" data-pa-action="proc-up" data-id="${p.id}" title="위로">↑</button>
+              <button type="button" class="icon-btn" data-pa-action="proc-down" data-id="${p.id}" title="아래로">↓</button>
+              <button type="button" class="icon-btn danger" data-pa-action="proc-delete" data-id="${p.id}" title="삭제">✕</button>
+            </div>
+          `).join('') || '<div class="empty-state" style="padding:8px 0;">등록된 진행순서가 없습니다</div>'}
+          <button type="button" class="pa-qa-add" data-pa-action="proc-add">+ 항목 추가</button>
+        ` : `
+          <div class="steps-row" style="margin-bottom:0;">
+            ${procSteps.map((p,i) => `
+              ${i>0?'<span class="step-arrow">→</span>':''}
+              <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(p.text)}</span>
+            `).join('') || '<span class="empty-state" style="padding:0;">등록된 진행순서가 없습니다</span>'}
+          </div>
+        `}
+      </div>
+    ` : (procedure ? `
       <div class="card">
         <div class="card-title">📋 지금 해야 할 업무 순서 — ${escapeHtml(procedure.title)}</div>
         <div class="steps-row" style="margin-bottom:0;">
@@ -3017,8 +3383,9 @@ function renderPhoneAssistantCore(){
           `).join('') || '<span class="empty-state" style="padding:0;">등록된 단계가 없습니다</span>'}
         </div>
       </div>
-    ` : ''}
+    ` : '')}
 
+    <!-- ⑤ 담당자 / 자료 / 참고정보 -->
     ${material || wantsMaterial ? `
       <div class="card">
         <div class="card-title">📎 관련 자료</div>
@@ -3106,7 +3473,7 @@ function renderPhoneAssistantView(){
 
 /* ==========================================================================
    홈 (사이트를 열면 가장 먼저 보이는 화면)
-   순서: ① 전화 비서 ② 오늘 먼저 처리할 업무 ③ 업무도구
+   순서: ① 전화 비서 ② 처리할 업무 ③ 업무도구
    전부 기존 함수를 그대로 재사용해서 조합만 한다 — 새 로직/새 데이터 없음.
    ========================================================================== */
 function renderHomeView(){
@@ -3120,8 +3487,10 @@ function renderHomeView(){
     ${renderPhoneAssistantCore()}
     <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-phone">전화 비서 전체 화면 · 참고 데이터 관리 열기 →</button></div>
 
+    ${renderAiComposerCard()}
+
     <div class="view-header" style="margin:8px 0 10px;">
-      <h1 style="font-size:20px;">오늘 먼저 처리할 업무 ${todayCount}건</h1>
+      <h1 style="font-size:20px;">처리할 업무 ${todayCount}건</h1>
     </div>
     ${renderTodayList()}
     <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-today">오늘 업무 전체 보기 · 직접 추가 →</button></div>
@@ -3175,17 +3544,44 @@ function renderMaterialsToolView(){
 // 통화 종료 → 저장 전 검토 화면. 요약/후속업무 모두 사용자가 직접 수정할 수 있고,
 // [저장]을 눌러야만 Firestore(state.callLogs)에 확정 저장된다 — 원문(rawMemo)은 별도로 그대로 보존된다.
 function renderPhoneCallEndedCore(s){
+  const hasFields = !!s.scenarioTag;
   return `
-    <div class="card highlight">
-      <div class="card-head">
-        <div class="card-title" style="margin:0;">📝 통화내용 정리 (수정 가능)</div>
-        <div class="card-actions">
-          <button class="copy-btn" data-pa-action="copy-report">📋 복사</button>
-          <button class="icon-btn" data-pa-action="ai-polish-report" title="AI로 다듬기">✨</button>
-        </div>
+    ${hasFields ? `
+      <div class="card highlight">
+        <div class="card-title" style="margin-bottom:12px;">📝 통화 접수 정리</div>
+        <div class="pa-field-row"><span class="pa-field-label">문의유형</span><span class="pa-field-val">${escapeHtml(BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag)}</span></div>
+        ${phoneFieldSchemaFor(s.scenarioTag).map(f => {
+          const v = s.finalFields[f.key] || '';
+          if(!v && !f.core) return '';
+          return `
+          <div class="pa-field-row">
+            <span class="pa-field-label">${escapeHtml(f.label)}${(!v && f.core) ? ' <span class="pa-field-badge">미확인</span>' : ''}</span>
+            <input type="text" class="pa-field-input" data-field-key="${f.key}" value="${escapeHtml(v)}" />
+          </div>`;
+        }).join('')}
       </div>
-      <textarea id="paSummaryEdit" class="pa-rawmemo" style="min-height:150px;">${escapeHtml(s.report)}</textarea>
-    </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">💬 전달용 문구</div>
+        <textarea id="paRelayText" class="pa-rawmemo" style="min-height:140px;">${escapeHtml(s.relayText || '')}</textarea>
+      </div>
+      <div class="pa-endcall-row" style="flex-wrap:wrap;">
+        <button type="button" class="btn btn-ghost" data-pa-action="copy-all">전체 복사</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="relay-copy">전달문구 복사</button>
+        <button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="call-edit-again">수정</button>
+      </div>
+    ` : `
+      <div class="card highlight">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">📝 통화내용 정리 (수정 가능)</div>
+          <div class="card-actions">
+            <button class="copy-btn" data-pa-action="copy-report">📋 복사</button>
+            <button class="icon-btn" data-pa-action="ai-polish-report" title="AI로 다듬기">✨</button>
+          </div>
+        </div>
+        <textarea id="paSummaryEdit" class="pa-rawmemo" style="min-height:150px;">${escapeHtml(s.report)}</textarea>
+      </div>
+    `}
     <div class="card">
       <div class="card-head">
         <div class="card-title" style="margin:0;">✅ 후속 업무 (수정 가능)</div>
@@ -3206,7 +3602,7 @@ function renderPhoneCallEndedCore(s){
       <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(combinedRawMemo(s)) || '(입력된 메모 없음)'}</div>
     </div>
     <div class="pa-endcall-row">
-      <button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>
+      ${hasFields ? '' : '<button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>'}
       <button type="button" class="btn btn-ghost" data-pa-action="new-call">저장 안 하고 새 통화 시작</button>
     </div>
   `;
@@ -3330,6 +3726,13 @@ contentEl.addEventListener('submit', (e)=>{
   requestAnimationFrame(()=>{ const el = document.getElementById('paInput'); if(el) el.focus(); });
 });
 
+// ChatGPT처럼: AI 문구수정 입력창에서 Enter = 즉시 실행, Shift+Enter = 줄바꿈
+contentEl.addEventListener('keydown', (e)=>{
+  if(e.target && e.target.id === 'aiNoteInput' && e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    triggerAiRewrite();
+  }
+});
 // 질문 답변 입력 중 Enter를 누르면 [다음]과 동일하게 다음 질문으로 넘어간다
 contentEl.addEventListener('keydown', (e)=>{
   if(e.target && e.target.matches && e.target.matches('.pa-qa-focus-answer') && e.key === 'Enter'){
@@ -3361,14 +3764,96 @@ contentEl.addEventListener('click', (e)=>{
     phoneSession.endedAt = Date.now();
     phoneSession.report = buildPhoneCallReport(phoneSession);
     phoneSession.followups = buildPhoneFollowups(phoneSession);
+    if(phoneSession.scenarioTag){
+      const det = extractFieldsDeterministic(phoneSession);
+      phoneSession.extractedFields = det;
+      phoneSession.finalFields = { ...det };
+      phoneSession.relayText = buildRelayText(phoneSession.scenarioTag, phoneSession.finalFields);
+      const apiKey = getOpenAIKey();
+      if(apiKey){
+        const sessionRef = phoneSession;
+        extractFieldsAI(apiKey, sessionRef).then(aiFields => {
+          if(phoneSession !== sessionRef) return; // 그 사이 새 통화가 시작됐으면 반영하지 않는다
+          Object.keys(aiFields).forEach(k => { if(aiFields[k]) sessionRef.extractedFields[k] = aiFields[k]; });
+          // 사용자가 이미 직접 고친 값은 AI 결과로 덮어쓰지 않는다
+          Object.keys(aiFields).forEach(k => {
+            if(aiFields[k] && !(sessionRef.finalFields[k]||'').trim()) sessionRef.finalFields[k] = aiFields[k];
+          });
+          sessionRef.relayText = buildRelayText(sessionRef.scenarioTag, sessionRef.finalFields);
+          persistActiveCall();
+          render();
+        });
+      }
+    }
     persistActiveCall(); // 저장 전 검토 단계도 새로고침에 대비해 계속 임시 보관한다
     render();
   } else if(action === 'new-call'){
     phoneSession = newPhoneSession();
+    clearActiveCallStorage();
     render();
+  } else if(action === 'field-edit-noop'){
+    // no-op (input change is handled by contentEl 'input' listener below)
+  } else if(action === 'relay-copy'){
+    copyText(phoneSession.relayText || '');
+  } else if(action === 'copy-all'){
+    const s = phoneSession;
+    copyText([buildStructuredText(s.scenarioTag, s.finalFields), '', '전달용 문구', s.relayText || ''].join('\n'));
+  } else if(action === 'call-edit-again'){
+    phoneSession.endedAt = null;
+    persistActiveCall();
+    render();
+  } else if(action === 'qa-edit-toggle'){
+    phoneSession.qaEditMode = !phoneSession.qaEditMode;
+    render();
+  } else if(action === 'proc-edit-toggle'){
+    phoneSession.procEditMode = !phoneSession.procEditMode;
+    render();
+  } else if(action === 'proc-add'){
+    const tag = phoneSession.scenarioTag;
+    getPhoneProcedureSet(tag).push({ id: uid(), text:'' });
+    saveState(); render();
+    requestAnimationFrame(()=>{
+      const inputs = document.querySelectorAll('.pa-proc-input');
+      const last = inputs[inputs.length-1];
+      if(last) last.focus();
+    });
+  } else if(action === 'proc-delete'){
+    if(confirm('이 진행순서 항목을 삭제하시겠습니까?')){
+      const tag = phoneSession.scenarioTag;
+      state.phoneProcedureSets[tag] = (state.phoneProcedureSets[tag]||[]).filter(p=>p.id!==btn.dataset.id);
+      saveState(); render();
+    }
+  } else if(action === 'proc-up' || action === 'proc-down'){
+    const tag = phoneSession.scenarioTag;
+    const arr = state.phoneProcedureSets[tag] || [];
+    const idx = arr.findIndex(p=>p.id===btn.dataset.id);
+    const swapWith = action === 'proc-up' ? idx-1 : idx+1;
+    if(idx>=0 && swapWith>=0 && swapWith<arr.length){
+      [arr[idx], arr[swapWith]] = [arr[swapWith], arr[idx]];
+      saveState(); render();
+    }
+  } else if(action === 'qa-up' || action === 'qa-down'){
+    const arr = phoneSession.qa;
+    const idx = arr.findIndex(q=>q.id===btn.dataset.id);
+    const swapWith = action === 'qa-up' ? idx-1 : idx+1;
+    if(idx>=0 && swapWith>=0 && swapWith<arr.length){
+      [arr[idx], arr[swapWith]] = [arr[swapWith], arr[idx]];
+      const setArr = phoneSession.scenarioTag && state.phoneQuestionSets[phoneSession.scenarioTag];
+      if(setArr){
+        const sIdx = setArr.findIndex(q=>q.id===btn.dataset.id);
+        const sSwap = action === 'qa-up' ? sIdx-1 : sIdx+1;
+        if(sIdx>=0 && sSwap>=0 && sSwap<setArr.length){ [setArr[sIdx], setArr[sSwap]] = [setArr[sSwap], setArr[sIdx]]; saveState(); }
+      }
+      persistActiveCall(); render();
+    }
   } else if(action === 'qa-add'){
-    phoneSession.qa.push({ id: uid(), label:'', question:'', answer:'', source:'custom' });
+    const item = { id: uid(), label:'', question:'', answer:'', source:'custom' };
+    phoneSession.qa.push(item);
     phoneSession.currentQaIndex = phoneSession.qa.length - 1; // 추가한 질문으로 바로 이동
+    if(phoneSession.scenarioTag){
+      getPhoneQuestionSet(phoneSession.scenarioTag).push({ id:item.id, label:item.label, question:item.question });
+      saveState();
+    }
     persistActiveCall();
     render();
     requestAnimationFrame(()=>{
@@ -3380,6 +3865,10 @@ contentEl.addEventListener('click', (e)=>{
     if(confirm('이 질문을 삭제하시겠습니까?')){
       const delIdx = phoneSession.qa.findIndex(q => q.id === btn.dataset.id);
       phoneSession.qa = phoneSession.qa.filter(q => q.id !== btn.dataset.id);
+      if(phoneSession.scenarioTag && state.phoneQuestionSets[phoneSession.scenarioTag]){
+        state.phoneQuestionSets[phoneSession.scenarioTag] = state.phoneQuestionSets[phoneSession.scenarioTag].filter(q=>q.id!==btn.dataset.id);
+        saveState();
+      }
       if(phoneSession.currentQaIndex >= delIdx) phoneSession.currentQaIndex = Math.max(0, phoneSession.currentQaIndex - 1);
       persistActiveCall();
       render();
@@ -3540,7 +4029,7 @@ function renderTodayView(){
   return `
     <div class="view-topbar"><span class="crumb">TOOLS</span></div>
     <div class="view-header">
-      <h1>오늘 먼저 처리할 업무 ${items.length}건</h1>
+      <h1>처리할 업무 ${items.length}건</h1>
       <p>전화 비서 후속업무와 직접 등록한 업무를 모아 우선순위대로 보여드립니다.</p>
     </div>
     <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
@@ -3562,6 +4051,7 @@ function renderTodayCard(w){
       <div class="today-card-top">
         <span class="today-status-tag ${meta.tagClass}">${escapeHtml(meta.label)}</span>
         <span class="today-card-title">${who ? escapeHtml(who) + ' — ' : ''}${escapeHtml(w.title)}</span>
+        <button type="button" class="today-card-del" data-tw-action="work-delete" data-id="${w.id}" title="이 업무 삭제">✕</button>
       </div>
       ${w.nextAction ? `<div class="today-card-sub">→ ${escapeHtml(w.nextAction)}</div>` : ''}
       ${expanded ? renderTodayDetail(w, meta, company, site) : ''}
@@ -3733,7 +4223,7 @@ contentEl.addEventListener('click', (e)=>{
 });
 
 /* ---------- Init ---------- */
-// 인사말/브리핑 토스트는 두지 않는다 — 홈 화면 자체가 항상 "오늘 먼저 처리할 업무"를 곧바로 보여준다.
+// 인사말/브리핑 토스트는 두지 않는다 — 홈 화면 자체가 항상 "처리할 업무"를 곧바로 보여준다.
 function render(){ renderSidebar(); renderContent(); renderQuickLinks(); updateTodoBadge(); }
 render();
 </script>
