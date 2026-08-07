@@ -263,7 +263,7 @@
 
   .inline-form{display:flex;gap:8px;margin-top:12px;}
   .inline-form input{
-    flex:1;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);font-size:14px;font-family:inherit;
+    flex:1;min-width:0;padding:9px 12px;border-radius:8px;border:1px solid var(--card-border);font-size:14px;font-family:inherit;
   }
   .inline-form button{
     background:var(--accent);color:#fff;border:none;border-radius:8px;padding:9px 16px;
@@ -319,13 +319,19 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  /* Top bar: quicklinks(왼쪽) + 검색창(가운데) + note/lock(오른쪽) */
+  /* Top bar: 좌측 브랜드 + 우측 검색/오늘할일/알림/사용자 */
   .topbar{
     position:sticky;top:0;z-index:90;background:#fff;border-bottom:1px solid var(--card-border);
     padding:16px 28px;
   }
-  .topbar-inner{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:20px;}
-  .search-wrap{position:relative;flex:0 0 200px;width:200px;justify-self:center;}
+  .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+  .topbar-brand{
+    font-size:15px;font-weight:800;color:var(--navy);letter-spacing:.01em;flex:none;
+    background:none;border:none;padding:0;cursor:pointer;font-family:inherit;
+  }
+  .topbar-brand:hover{color:var(--accent-dark);}
+  .topbar-brand .sep{color:var(--text-light-gray);font-weight:400;margin:0 6px;}
+  .search-wrap{position:relative;flex:0 0 200px;width:200px;}
   .search-box{
     width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);
     font-size:13.5px;font-family:inherit;background:var(--bg);color:var(--text-dark);
@@ -395,7 +401,8 @@
   }
   .qlink-slot.empty:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-soft);}
 
-  .top-actions{display:flex;align-items:center;gap:8px;flex:none;justify-self:end;}
+  .top-actions{display:flex;align-items:center;gap:8px;flex:none;}
+  .sidebar-primary-group .nav-item{width:100%;text-align:left;font-family:inherit;}
   .top-icon-btn{
     position:relative;width:42px;height:42px;flex:none;border-radius:10px;background:#fff;border:1px solid var(--card-border);
     font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
@@ -478,14 +485,7 @@
   .pa-admin-row:last-child{border-bottom:none;}
   .pa-admin-actions{display:flex;gap:4px;flex-shrink:0;}
 
-  /* 오늘 업무 비서 */
-  .today-summary-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:18px;}
-  .today-summary-count{font-size:15px;font-weight:700;color:var(--text-dark);margin-right:4px;}
-  .today-chip{
-    display:inline-flex;align-items:center;gap:6px;background:var(--hover-blue-soft);color:var(--accent-dark);
-    font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:999px;
-  }
-  .today-chip.urgent{background:#fde8e8;color:#b91c1c;}
+  /* 오늘 업무 비서 (상태 요약 가로칸은 두지 않는다 — 각 업무 행 왼쪽 상태 태그로만 표시) */
   .today-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
   .today-card{
     background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
@@ -498,9 +498,10 @@
     flex:none;font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;
     background:var(--navy-soft);color:var(--navy);letter-spacing:.02em;
   }
-  .today-status-tag.st-urgent{background:#fde8e8;color:#b91c1c;}
-  .today-status-tag.st-callback{background:#fef3c7;color:#92400e;}
-  .today-status-tag.st-material{background:#dbeafe;color:#1e40af;}
+  .today-status-tag.st-urgent{background:#fde8e8;color:#b91c1c;}       /* 긴급 = 연한 빨강 */
+  .today-status-tag.st-callback{background:#e3f7e8;color:#15803d;}    /* 콜백 = 연한 초록 */
+  .today-status-tag.st-material{background:#ffedd5;color:#9a3412;}    /* 자료발송 = 연한 주황 */
+  .today-status-tag.st-waiting{background:#ede9fe;color:#5b21b6;}     /* 대기 = 연한 보라 */
   .today-card-title{font-size:15px;font-weight:700;color:var(--text-dark);}
   .today-card-sub{font-size:13px;color:var(--text-gray);margin-top:4px;}
   .today-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
@@ -512,15 +513,42 @@
   .today-snooze-menu{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
   .today-empty{color:var(--text-gray);font-size:14px;padding:24px 0;text-align:center;}
 
+  /* 홈: 전화 비서 + 오늘 업무 + 업무도구를 한 화면에 요약 */
+  .home-more-link{text-align:right;margin:6px 0 26px;}
+  .link-btn{background:none;border:none;padding:0;font-size:12px;color:var(--text-gray);cursor:pointer;}
+  .link-btn:hover{color:var(--accent-dark);text-decoration:underline;}
+  .worktools-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+  .worktools-btn{
+    background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;
+    padding:10px 18px;font-size:13.5px;font-weight:700;color:var(--text-dark);cursor:pointer;
+  }
+  .worktools-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
+  .worktools-btn.disabled, .worktools-btn:disabled{
+    color:var(--text-light-gray);cursor:not-allowed;background:var(--bg);
+  }
+  .worktools-btn.disabled:hover, .worktools-btn:disabled:hover{border-color:var(--card-border);color:var(--text-light-gray);}
+
+  /* 사이드바: 상단 우선순위 그룹(홈/전화 비서/오늘 업무) + 하단 업무도구 그룹 */
+  .sidebar-primary-group{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
+  .sidebar-group-label{font-size:11px;font-weight:700;color:var(--sb-text-faint);letter-spacing:.06em;margin:0 2px 8px;}
+  .sidebar-quicklinks{margin-top:16px;padding-top:16px;border-top:1px solid var(--sb-border);}
+  .sidebar-quicklinks .quicklinks-grid{display:flex;flex-wrap:wrap;gap:6px;}
+  .sidebar-quicklinks .qlink-slot{height:30px;font-size:11.5px;}
+  .sidebar-quicklinks .qlink-main{padding:0 9px;gap:6px;}
+
+  /* 상단 헤더: 미연결(알림/사용자) 버튼 표시 */
+  .top-icon-btn:disabled{color:var(--text-light-gray);cursor:not-allowed;background:var(--bg);}
+  .top-icon-btn:disabled:hover{border-color:var(--card-border);background:var(--bg);}
+
   @media (max-width:760px){
     .sidebar{position:fixed;left:0;top:75px;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
     .sidebar.open{transform:translateX(0);}
     .content{padding:20px;}
     .topbar{padding:12px 16px;}
-    .topbar-inner{display:flex;flex-wrap:wrap;gap:10px;}
-    .quicklinks-panel{flex:1 1 auto;order:1;}
-    .top-actions{order:2;justify-self:auto;}
-    .search-wrap{flex:1 1 100%;width:auto;order:3;justify-self:auto;}
+    .topbar-inner{flex-wrap:wrap;gap:10px;}
+    .topbar-brand{order:1;}
+    .top-actions{order:2;}
+    .search-wrap{flex:1 1 100%;width:auto;order:3;}
     .search-results{left:0;right:0;width:auto;max-width:none;}
     .note-panel{width:100%;max-width:100%;}
   }
@@ -529,16 +557,15 @@
 <body>
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="quicklinks-panel">
-      <div class="quicklinks-grid" id="quickLinks"></div>
-    </div>
+    <button type="button" class="topbar-brand" id="homeBrandLink">SHIN<span class="sep">/</span>업무비서</button>
     <div class="top-actions">
-      <button class="top-icon-btn" id="noteBtn" title="할 일 목록">📝<span class="badge-dot" id="todoBadge">0</span></button>
-      <button class="top-icon-btn" id="lockBtn" title="계정 정보">🔒</button>
-    </div>
-    <div class="search-wrap">
-      <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
-      <div class="search-results" id="searchResults"></div>
+      <div class="search-wrap">
+        <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
+        <div class="search-results" id="searchResults"></div>
+      </div>
+      <button class="top-icon-btn" id="noteBtn" title="오늘 할 일">📝<span class="badge-dot" id="todoBadge">0</span></button>
+      <button class="top-icon-btn" id="notifBtn" title="알림 (미연결 — 연결된 기존 기능 없음)" disabled>🔔</button>
+      <button class="top-icon-btn" id="userBtn" title="사용자 (미연결 — 연결된 기존 기능 없음)" disabled>👤</button>
     </div>
   </div>
 </div>
@@ -563,15 +590,31 @@
     </div>
     <hr class="sep" />
 
+    <div class="sidebar-primary-group">
+      <button type="button" class="nav-item" id="homeNavLink">홈</button>
+      <button type="button" class="nav-item" id="phoneAssistantFooterLink">전화 비서</button>
+      <button type="button" class="nav-item" id="todayFooterLink">오늘 업무</button>
+    </div>
+
     <div class="nav-section">
+      <div class="sidebar-group-label">업무 가이드</div>
       <ul class="nav-list" id="unifiedNavList"></ul>
       <button class="nav-add" id="addGuideBtn">+ 새 가이드 추가</button>
     </div>
 
     <div class="sidebar-footer">
-      <button type="button" class="sidebar-footer-link" id="todayFooterLink">오늘 업무</button>
-      <button type="button" class="sidebar-footer-link" id="phoneAssistantFooterLink">전화 비서</button>
-      <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체 관리</button>
+      <div class="sidebar-group-label">업무도구</div>
+      <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체관리</button>
+      <button type="button" class="sidebar-footer-link" id="perfSearchLink" disabled title="아직 연결된 기존 기능이 없습니다 (미연결)">실적검색</button>
+      <button type="button" class="sidebar-footer-link" id="materialsFooterLink">자료실</button>
+      <button type="button" class="sidebar-footer-link" id="manualFooterLink">업무매뉴얼</button>
+      <button type="button" class="sidebar-footer-link" id="vaultFooterLink">계정관리</button>
+      <button type="button" class="sidebar-footer-link" id="settingsFooterLink">설정</button>
+
+      <div class="sidebar-quicklinks">
+        <div class="sidebar-group-label">바로가기</div>
+        <div class="quicklinks-grid" id="quickLinks"></div>
+      </div>
     </div>
 
     <div class="ai-note-composer">
@@ -822,6 +865,9 @@ function saveState(){
 }
 
 let state = loadState();
+// 사이트를 열 때(새로고침 포함)는 항상 홈 화면부터 시작한다 — "이 화면 하나만 켜놓고 업무" 원칙.
+// 마지막으로 보던 화면 자체는 데이터가 아니라 탐색 위치일 뿐이며, 다른 메뉴 이동 시 다시 저장된다.
+state.currentView = {type:'home'};
 let companySearchQuery = ''; // 업체 검색어(임시 상태, localStorage에는 저장하지 않음)
 
 /* ---------- Firebase 실시간 동기화 연결 (연결 안 되면 조용히 무시되고 기존 localStorage 동작 그대로) ---------- */
@@ -1109,14 +1155,9 @@ function syncNavOrder(){
     }
   });
   state.navOrder = state.navOrder.filter(e => e.kind !== 'guide' || state.guides.some(g => g.id === e.guideId));
-  // '자주 쓰는 멘트'와 '업체 관리'는 목록에서 제외 (기능/데이터는 유지, 업체 관리는
-  // 사이드바 하단으로 이동, 멘트는 통합 검색으로 계속 찾을 수 있음)
-  state.navOrder = state.navOrder.filter(e => e.kind !== 'phrases' && e.kind !== 'companies');
-  ['manual'].forEach(kind => {
-    if(!state.navOrder.some(e => e.kind === kind)){
-      state.navOrder.push({id:`nav-${kind}`, kind});
-    }
-  });
+  // '자주 쓰는 멘트'/'업체 관리'/'업무매뉴얼'은 목록에서 제외 (기능/데이터는 유지, 업체 관리·업무매뉴얼은
+  // 사이드바 업무도구로 이동, 멘트는 통합 검색으로 계속 찾을 수 있음)
+  state.navOrder = state.navOrder.filter(e => e.kind !== 'phrases' && e.kind !== 'companies' && e.kind !== 'manual');
 }
 function getNavItems(){
   return state.navOrder.map(entry => {
@@ -1147,10 +1188,15 @@ function renderSidebar(){
     </li>
   `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">항목이 없습니다</li>';
 
+  document.getElementById('homeNavLink').classList.toggle('active', state.currentView.type === 'home');
   document.getElementById('companiesFooterLink').classList.toggle('active', state.currentView.type === 'companies');
   document.getElementById('phoneAssistantFooterLink').classList.toggle('active', state.currentView.type === 'phoneAssistant');
   document.getElementById('todayFooterLink').classList.toggle('active', state.currentView.type === 'today');
+  document.getElementById('materialsFooterLink').classList.toggle('active', state.currentView.type === 'materials');
 }
+function goHome(){ state.currentView = {type:'home'}; saveState(); render(); }
+document.getElementById('homeNavLink').addEventListener('click', goHome);
+document.getElementById('homeBrandLink').addEventListener('click', goHome);
 document.getElementById('companiesFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'companies'};
   saveState(); render();
@@ -1162,6 +1208,18 @@ document.getElementById('phoneAssistantFooterLink').addEventListener('click', ()
 document.getElementById('todayFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'today'};
   saveState(); render();
+});
+document.getElementById('materialsFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'materials'};
+  saveState(); render();
+});
+document.getElementById('manualFooterLink').addEventListener('click', ()=>{
+  // 기존 '업무매뉴얼' 기능 재사용 (사이드바 가이드 목록의 manual 항목과 동일한 동작)
+  window.open('call-manual.html', '_blank', 'noopener');
+});
+document.getElementById('settingsFooterLink').addEventListener('click', ()=>{
+  // 별도의 통합 설정 화면은 기존에 없어 기존 AI 업무비서 설정(OpenAI 키) 모달을 재사용
+  openAiSettingsModal();
 });
 
 const unifiedNavListEl = document.getElementById('unifiedNavList');
@@ -1258,12 +1316,16 @@ function renderContent(){
     el.innerHTML = renderPhoneAssistantView();
   } else if(state.currentView.type === 'today'){
     el.innerHTML = renderTodayView();
+  } else if(state.currentView.type === 'materials'){
+    el.innerHTML = renderMaterialsToolView();
+  } else if(state.currentView.type === 'home'){
+    el.innerHTML = renderHomeView();
   } else {
-    // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 첫 가이드로 이동
+    // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 홈으로 이동
     // 할 일 목록은 상단 📝 노트 패널로 이동했습니다.
-    state.currentView = state.guides[0] ? {type:'guide', id:state.guides[0].id} : {type:'phrases'};
+    state.currentView = {type:'home'};
     saveState();
-    el.innerHTML = state.currentView.type==='guide' ? renderGuideView(state.guides[0]) : renderPhrasesView();
+    el.innerHTML = renderHomeView();
   }
 }
 
@@ -1741,6 +1803,33 @@ contentEl.addEventListener('click', (e)=>{
     pendingOcrData = {}; // 수동 등록은 이전에 첨부해두고 취소했던 OCR 결과를 이어받지 않음
     openAddCompanyModal(companySearchQuery);
   }
+  // 홈 화면: 전화 비서/오늘 업무 "전체 화면 열기" 링크 (기존 화면 전환 로직 재사용)
+  else if(action === 'home-open-phone'){
+    state.currentView = {type:'phoneAssistant'};
+    saveState(); render();
+  }
+  else if(action === 'home-open-today'){
+    state.currentView = {type:'today'};
+    saveState(); render();
+  }
+  // 업무도구: 기존 기능에 그대로 연결 (업체관리/자료실은 기존 화면 전환, 업무매뉴얼/계정관리/설정은 기존 함수 재사용)
+  else if(action === 'tool-companies'){
+    state.currentView = {type:'companies'};
+    saveState(); render();
+  }
+  else if(action === 'tool-materials'){
+    state.currentView = {type:'materials'};
+    saveState(); render();
+  }
+  else if(action === 'tool-manual'){
+    window.open('call-manual.html', '_blank', 'noopener');
+  }
+  else if(action === 'tool-vault'){
+    openVault();
+  }
+  else if(action === 'tool-settings'){
+    openAiSettingsModal();
+  }
 });
 
 /* 업체 관리: 명함/사업자등록증 첨부 영역 (클릭으로 파일 선택 + 드래그 앤 드롭) */
@@ -1981,7 +2070,8 @@ function renderVault(){
 }
 function openVault(){ renderVault(); vaultOverlay.classList.add('open'); }
 function closeVault(){ vaultOverlay.classList.remove('open'); }
-document.getElementById('lockBtn').addEventListener('click', openVault);
+// 계정 정보(볼트) 진입점은 헤더 🔒 아이콘 대신 사이드바 업무도구 "계정관리" 버튼으로 통합됨(아래 vaultFooterLink)
+document.getElementById('vaultFooterLink').addEventListener('click', openVault);
 document.getElementById('vaultClose').addEventListener('click', closeVault);
 vaultOverlay.addEventListener('click', (e)=>{ if(e.target === vaultOverlay) closeVault(); });
 document.getElementById('vaultAddForm').addEventListener('submit', (e)=>{
@@ -2425,10 +2515,12 @@ async function polishPhoneReport(apiKey){
   }catch(err){ console.error(err); showToast('AI 다듬기에 실패했습니다'); }
 }
 
-function renderPhoneAssistantView(){
+// 전화 비서 "본체"(통화 입력창 + 결과 카드) — 홈 화면과 전화 비서 전체 화면이 동일하게 재사용한다.
+// 로직/데이터는 전혀 바뀌지 않고, 어디에 배치되느냐만 다르다.
+function renderPhoneAssistantCore(){
   if(!phoneSession) phoneSession = newPhoneSession();
   const s = phoneSession;
-  if(s.endedAt) return renderPhoneCallEndedView(s);
+  if(s.endedAt) return renderPhoneCallEndedCore(s);
 
   const counterpart = s.company ? `🏢 ${escapeHtml(s.company.name)}`
     : s.site ? `🏠 ${escapeHtml(s.site.name)}`
@@ -2449,12 +2541,6 @@ function renderPhoneAssistantView(){
   const nothingYet = !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
 
   return `
-    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
-    <div class="view-header">
-      <h1>📞 전화 비서</h1>
-      <p>통화하면서 단어·짧은 문장만 입력해도 지금 필요한 정보를 바로 보여드립니다.</p>
-    </div>
-
     <div class="card pa-callbar">
       <div class="pa-callbar-head">
         <div>
@@ -2464,8 +2550,8 @@ function renderPhoneAssistantView(){
         <button type="button" class="btn btn-ghost" data-pa-action="end-call">통화 종료</button>
       </div>
       <form class="inline-form" data-pa-form="add-note" style="margin-top:14px;">
-        <input type="text" id="paInput" placeholder="예: 부산 덕천주공1단지 / 시방서 / 체결 문의" autocomplete="off" />
-        <button type="submit">입력</button>
+        <input type="text" id="paInput" placeholder="업체명 / 아파트명 / 문의내용을 입력하세요 (예: 부산 덕천주공1단지, 시방서, 체결 문의)" autocomplete="off" />
+        <button type="submit">검색 / 시작</button>
       </form>
       ${s.notes.length ? `<div class="pa-notes-log">${s.notes.map(n => `<div class="pa-note-line">· ${escapeHtml(n.text)}</div>`).join('')}</div>` : ''}
     </div>
@@ -2546,7 +2632,18 @@ function renderPhoneAssistantView(){
     ` : ''}
 
     ${nothingYet ? `<div class="empty-state">입력한 내용과 일치하는 저장된 정보가 아직 없습니다. 단어를 더 입력해보세요.</div>` : ''}
+  `;
+}
 
+// 전화 비서 전체 화면(사이드바 "전화 비서") — 위 본체에 제목과 참고 데이터 관리 패널만 덧붙인다.
+function renderPhoneAssistantView(){
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>📞 전화 비서</h1>
+      <p>통화하면서 단어·짧은 문장만 입력해도 지금 필요한 정보를 바로 보여드립니다.</p>
+    </div>
+    ${renderPhoneAssistantCore()}
     <div class="card" style="margin-top:24px;">
       <div class="card-head"><div class="card-title" style="margin:0;">⚙️ 전화 비서 참고 데이터 관리</div></div>
       ${renderPhoneAdminPanel()}
@@ -2554,13 +2651,75 @@ function renderPhoneAssistantView(){
   `;
 }
 
-function renderPhoneCallEndedView(s){
+/* ==========================================================================
+   홈 (사이트를 열면 가장 먼저 보이는 화면)
+   순서: ① 전화 비서 ② 오늘 먼저 처리할 업무 ③ 업무도구
+   전부 기존 함수를 그대로 재사용해서 조합만 한다 — 새 로직/새 데이터 없음.
+   ========================================================================== */
+function renderHomeView(){
+  const todayCount = activeWorkItems().length;
+  return `
+    <div class="view-topbar"><span class="crumb">HOME</span></div>
+
+    <div class="view-header" style="margin-bottom:12px;">
+      <h1 style="font-size:20px;">📞 전화 비서</h1>
+    </div>
+    ${renderPhoneAssistantCore()}
+    <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-phone">전화 비서 전체 화면 · 참고 데이터 관리 열기 →</button></div>
+
+    <div class="view-header" style="margin:8px 0 10px;">
+      <h1 style="font-size:20px;">오늘 먼저 처리할 업무 ${todayCount}건</h1>
+    </div>
+    ${renderTodayList()}
+    <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-today">오늘 업무 전체 보기 · 직접 추가 →</button></div>
+
+    <div class="view-header" style="margin:8px 0 10px;">
+      <h1 style="font-size:13px;color:var(--text-gray);letter-spacing:.05em;">업무도구</h1>
+    </div>
+    ${renderWorkToolsRow()}
+  `;
+}
+
+function renderWorkToolsRow(){
+  return `
+    <div class="worktools-row">
+      <button type="button" class="worktools-btn" data-action="tool-companies">업체관리</button>
+      <button type="button" class="worktools-btn disabled" disabled title="아직 연결된 기존 기능이 없습니다 (미연결)">실적검색</button>
+      <button type="button" class="worktools-btn" data-action="tool-materials">자료실</button>
+      <button type="button" class="worktools-btn" data-action="tool-manual">업무매뉴얼</button>
+      <button type="button" class="worktools-btn" data-action="tool-vault">계정관리</button>
+      <button type="button" class="worktools-btn" data-action="tool-settings">설정</button>
+    </div>
+  `;
+}
+
+// 자료실(업무도구) — 전화 비서 참고 데이터 관리 패널의 "자료 위치" 목록과 동일한 state.materials를
+// 그대로 보여준다. 추가/수정/삭제 버튼도 기존 mat-add/mat-edit/mat-delete 로직을 그대로 재사용한다.
+function renderMaterialsToolView(){
   return `
     <div class="view-topbar"><span class="crumb">TOOLS</span></div>
     <div class="view-header">
-      <h1>📞 전화 비서 — 통화 종료</h1>
-      <p>통화 메모를 바탕으로 보고 문구와 후속 업무를 정리했습니다.</p>
+      <h1>📎 자료실</h1>
+      <p>전화 비서가 자료 위치를 찾을 때 사용하는 자료 목록입니다.</p>
     </div>
+    <div class="card">
+      <div class="pa-admin-head"><span>자료 위치 (${state.materials.length})</span><button class="copy-btn" data-pa-action="mat-add">+ 추가</button></div>
+      ${state.materials.map(m => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(m.name)} · ${escapeHtml(m.location)}</span>
+          <span class="pa-admin-actions">
+            ${m.url ? `<a class="icon-btn" href="${escapeHtml(m.url)}" target="_blank" rel="noopener" title="자료 열기">🔗</a>` : ''}
+            <button class="icon-btn" data-pa-action="mat-edit" data-id="${m.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="mat-delete" data-id="${m.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state">등록된 자료가 없습니다</div>'}
+    </div>
+  `;
+}
+
+function renderPhoneCallEndedCore(s){
+  return `
     <div class="card highlight">
       <div class="card-head">
         <div class="card-title" style="margin:0;">📝 통화내용 정리</div>
@@ -2774,7 +2933,7 @@ const TODAY_STATUS_META = {
   material:     { label:'자료발송',   tagClass:'st-material', doneLabel:'발송 완료', weight:2 },
   replywait:    { label:'회신대기',   tagClass:'',            doneLabel:'회신 확인', weight:3 },
   contactcheck: { label:'담당자확인', tagClass:'',            doneLabel:'확인 완료', weight:3 },
-  waiting:      { label:'대기',       tagClass:'',            doneLabel:'자료 수령', weight:4 },
+  waiting:      { label:'대기',       tagClass:'st-waiting',  doneLabel:'자료 수령', weight:4 },
   unhandled:    { label:'미처리',     tagClass:'',            doneLabel:'완료',      weight:5 },
   meeting:      { label:'미팅',       tagClass:'',            doneLabel:'미팅 등록', weight:5 },
 };
@@ -2803,29 +2962,32 @@ function workItemJurisdiction(w){
 
 let expandedWorkItemId = null;
 
-function renderTodayView(){
+// 업무 목록 자체(한 줄 행 + 클릭 시 펼쳐지는 상세) — 홈 화면과 오늘 업무 전체 화면이 동일하게 재사용한다.
+// 상태 요약 가로칸(긴급1·자료발송2 …)은 두지 않는다 — 각 행 왼쪽 상태 태그로만 표시한다.
+function renderTodayList(){
   const items = sortWorkItems(activeWorkItems());
-  const counts = {};
-  items.forEach(w => { counts[w.status] = (counts[w.status]||0) + 1; });
+  return `
+    <div class="today-list">
+      ${items.map(w => renderTodayCard(w)).join('') || '<div class="today-empty">지금 처리할 업무가 없습니다.</div>'}
+    </div>
+  `;
+}
 
+// 오늘 업무 전체 화면(사이드바 "오늘 업무") — 목록 + 직접 추가/정리 보기 도구를 함께 보여준다.
+function renderTodayView(){
+  const items = activeWorkItems();
   return `
     <div class="view-topbar"><span class="crumb">TOOLS</span></div>
     <div class="view-header">
-      <h1>🗂 오늘 업무</h1>
+      <h1>오늘 먼저 처리할 업무 ${items.length}건</h1>
       <p>전화 비서 후속업무와 직접 등록한 업무를 모아 우선순위대로 보여드립니다.</p>
-    </div>
-    <div class="today-summary-bar">
-      <span class="today-summary-count">오늘 먼저 처리할 업무 ${items.length}건</span>
-      ${Object.keys(TODAY_STATUS_META).filter(k=>counts[k]).map(k => `<span class="today-chip ${k==='urgent'?'urgent':''}">${TODAY_STATUS_META[k].label} ${counts[k]}</span>`).join('')}
     </div>
     <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
       <button type="button" class="copy-btn" data-tw-action="add-open">+ 업무 직접 추가</button>
       <button type="button" class="copy-btn" data-tw-action="show-summary">오늘 업무 정리 보기</button>
     </div>
     <div id="todaySummaryArea"></div>
-    <div class="today-list">
-      ${items.map(w => renderTodayCard(w)).join('') || '<div class="today-empty">지금 처리할 업무가 없습니다.</div>'}
-    </div>
+    ${renderTodayList()}
   `;
 }
 function renderTodayCard(w){
@@ -3002,23 +3164,10 @@ contentEl.addEventListener('click', (e)=>{
   }
 });
 
-function maybeShowMorningBriefing(){
-  const key = 'work-guide-last-briefing-date';
-  const today = new Date().toDateString();
-  if(localStorage.getItem(key) === today) return;
-  localStorage.setItem(key, today);
-  const items = activeWorkItems();
-  if(!items.length) return;
-  const counts = {};
-  items.forEach(w => counts[w.status] = (counts[w.status]||0)+1);
-  const parts = Object.keys(TODAY_STATUS_META).filter(k=>counts[k]).map(k=>`${TODAY_STATUS_META[k].label} ${counts[k]}`);
-  showToast(`좋은 아침입니다. 오늘 먼저 처리할 업무 ${items.length}건 (${parts.join(' · ')})`);
-}
-
 /* ---------- Init ---------- */
+// 인사말/브리핑 토스트는 두지 않는다 — 홈 화면 자체가 항상 "오늘 먼저 처리할 업무"를 곧바로 보여준다.
 function render(){ renderSidebar(); renderContent(); renderQuickLinks(); updateTodoBadge(); }
 render();
-maybeShowMorningBriefing();
 </script>
 </body>
 </html>
