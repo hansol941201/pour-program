@@ -459,6 +459,59 @@
   .note-panel-head h2{margin:0;font-size:17px;}
   .note-panel-body{flex:1;overflow-y:auto;padding:20px 22px;}
 
+  /* 전화 비서 (통화 중 실시간 업무비서) */
+  .pa-callbar-head{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .pa-callbar-label{font-size:11px;font-weight:700;color:var(--text-gray);letter-spacing:.04em;margin-bottom:2px;}
+  .pa-callbar-who{font-size:17px;font-weight:700;color:var(--text-dark);}
+  .pa-callbar .inline-form input{font-size:16px;padding:12px 14px;}
+  .pa-callbar .inline-form button{font-size:14px;padding:12px 20px;}
+  .pa-notes-log{margin-top:14px;padding-top:12px;border-top:1px solid var(--card-border);max-height:160px;overflow-y:auto;}
+  .pa-note-line{font-size:13px;color:var(--text-gray);line-height:1.7;}
+  .pa-missing{font-size:13.5px;font-weight:700;color:var(--danger);}
+  .pa-check-item{font-size:13.5px;color:var(--text-dark);line-height:1.9;}
+  .pa-followup-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--card-border);font-size:13.5px;}
+  .pa-followup-item:last-child{border-bottom:none;}
+  .pa-admin-group{margin-bottom:16px;}
+  .pa-admin-group:last-child{margin-bottom:0;}
+  .pa-admin-head{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--text-gray);margin-bottom:8px;}
+  .pa-admin-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--card-border);font-size:13px;color:var(--text-dark);}
+  .pa-admin-row:last-child{border-bottom:none;}
+  .pa-admin-actions{display:flex;gap:4px;flex-shrink:0;}
+
+  /* 오늘 업무 비서 */
+  .today-summary-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:18px;}
+  .today-summary-count{font-size:15px;font-weight:700;color:var(--text-dark);margin-right:4px;}
+  .today-chip{
+    display:inline-flex;align-items:center;gap:6px;background:var(--hover-blue-soft);color:var(--accent-dark);
+    font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:999px;
+  }
+  .today-chip.urgent{background:#fde8e8;color:#b91c1c;}
+  .today-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+  .today-card{
+    background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
+    padding:16px 18px;cursor:pointer;
+  }
+  .today-card:hover{border-color:var(--accent);}
+  .today-card.expanded{border-color:var(--accent);box-shadow:0 0 0 3px var(--hover-blue-soft);}
+  .today-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .today-status-tag{
+    flex:none;font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;
+    background:var(--navy-soft);color:var(--navy);letter-spacing:.02em;
+  }
+  .today-status-tag.st-urgent{background:#fde8e8;color:#b91c1c;}
+  .today-status-tag.st-callback{background:#fef3c7;color:#92400e;}
+  .today-status-tag.st-material{background:#dbeafe;color:#1e40af;}
+  .today-card-title{font-size:15px;font-weight:700;color:var(--text-dark);}
+  .today-card-sub{font-size:13px;color:var(--text-gray);margin-top:4px;}
+  .today-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .today-detail-row{margin-bottom:12px;}
+  .today-detail-row:last-child{margin-bottom:0;}
+  .today-detail-label{font-size:11px;font-weight:700;color:var(--text-gray);letter-spacing:.03em;margin-bottom:4px;}
+  .today-detail-val{font-size:14px;color:var(--text-dark);line-height:1.6;white-space:pre-wrap;}
+  .today-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .today-snooze-menu{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .today-empty{color:var(--text-gray);font-size:14px;padding:24px 0;text-align:center;}
+
   @media (max-width:760px){
     .sidebar{position:fixed;left:0;top:75px;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
     .sidebar.open{transform:translateX(0);}
@@ -516,6 +569,8 @@
     </div>
 
     <div class="sidebar-footer">
+      <button type="button" class="sidebar-footer-link" id="todayFooterLink">오늘 업무</button>
+      <button type="button" class="sidebar-footer-link" id="phoneAssistantFooterLink">전화 비서</button>
       <button type="button" class="sidebar-footer-link" id="companiesFooterLink">업체 관리</button>
     </div>
 
@@ -576,7 +631,7 @@
      연결에 성공하면 'cloud-sync-ready' 이벤트로, 각 컬렉션 변경은 'cloud-sync-update' 이벤트로
      아래 메인 스크립트에 전달한다. 실패해도 기존 localStorage 동작에는 전혀 영향이 없다. -->
 <script type="module">
-  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings'];
+  const CLOUD_COLLECTIONS = ['companies', 'workflow', 'todo', 'accounts', 'shortcuts', 'phrases', 'settings', 'jurisdictions', 'materials', 'sites', 'workItems'];
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.projectId || cfg.projectId === 'YOUR_PROJECT_ID'){
     console.info('[Firebase] 설정이 없어 localStorage 전용 모드로 동작합니다. firebaseConfig.js를 추가하면 실시간 동기화가 활성화됩니다.');
@@ -684,6 +739,18 @@ const DEFAULT_STATE = {
   companies:[
     {id:uid(), name:'예시 업체', contactName:'', repName:'', phone:'', fax:'', email:'', bizRegNo:'', address:'', memo:''}
   ],
+  // 전화 비서가 참고하는 참고 데이터 (설정 화면에서 직접 추가/수정/삭제 가능. 아래는 예시 1건씩만 등록되어 있음)
+  jurisdictions:[
+    {id:uid(), region:'부산', branch:'예시 지사', manager:'예시 담당자', phone:'010-0000-0000'}
+  ],
+  materials:[
+    {id:uid(), name:'시방서', location:'홈페이지 → 자료실 → 시방서 (예시, 실제 경로로 수정해주세요)', url:''}
+  ],
+  sites:[
+    {id:uid(), name:'예시 아파트', region:'부산', memo:''}
+  ],
+  // 오늘 업무 비서가 관리하는 업무 카드. 전화 비서 통화 종료 시 후속업무를 저장하면 여기에 자동으로 쌓인다.
+  workItems:[],
   // 왼쪽 사이드바 통합 목록의 순서(드래그 앤 드롭 결과 포함). 카테고리 구분 없이 하나의 목록으로 표시된다.
   navOrder:[
     {id:'nav-guide-g1', kind:'guide', guideId:'g1'},
@@ -701,6 +768,11 @@ function loadState(){
       if(!parsed.credentials) parsed.credentials = [];
       if(!parsed.companies) parsed.companies = [];
       if(!Array.isArray(parsed.navOrder)) parsed.navOrder = [];
+      // 전화 비서 / 오늘 업무 비서용 추가 데이터 (기존 사용자는 빈 배열로 채워짐 — 예시 데이터 주입 없음)
+      if(!Array.isArray(parsed.jurisdictions)) parsed.jurisdictions = [];
+      if(!Array.isArray(parsed.materials)) parsed.materials = [];
+      if(!Array.isArray(parsed.sites)) parsed.sites = [];
+      if(!Array.isArray(parsed.workItems)) parsed.workItems = [];
       return parsed;
     }
   }catch(e){}
@@ -716,6 +788,10 @@ function getCloudSlice(key){
   if(key === 'shortcuts') return state.links;
   if(key === 'phrases') return state.phrases;
   if(key === 'settings') return { brand: state.brand, navOrder: state.navOrder };
+  if(key === 'jurisdictions') return state.jurisdictions;
+  if(key === 'materials') return state.materials;
+  if(key === 'sites') return state.sites;
+  if(key === 'workItems') return state.workItems;
   return null;
 }
 function applyCloudSlice(key, data){
@@ -730,6 +806,10 @@ function applyCloudSlice(key, data){
     if(data.brand) state.brand = data.brand;
     if(Array.isArray(data.navOrder)) state.navOrder = data.navOrder;
   }
+  else if(key === 'jurisdictions') state.jurisdictions = data;
+  else if(key === 'materials') state.materials = data;
+  else if(key === 'sites') state.sites = data;
+  else if(key === 'workItems') state.workItems = data;
 }
 
 function saveState(){
@@ -1068,9 +1148,19 @@ function renderSidebar(){
   `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">항목이 없습니다</li>';
 
   document.getElementById('companiesFooterLink').classList.toggle('active', state.currentView.type === 'companies');
+  document.getElementById('phoneAssistantFooterLink').classList.toggle('active', state.currentView.type === 'phoneAssistant');
+  document.getElementById('todayFooterLink').classList.toggle('active', state.currentView.type === 'today');
 }
 document.getElementById('companiesFooterLink').addEventListener('click', ()=>{
   state.currentView = {type:'companies'};
+  saveState(); render();
+});
+document.getElementById('phoneAssistantFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'phoneAssistant'};
+  saveState(); render();
+});
+document.getElementById('todayFooterLink').addEventListener('click', ()=>{
+  state.currentView = {type:'today'};
   saveState(); render();
 });
 
@@ -1164,6 +1254,10 @@ function renderContent(){
     el.innerHTML = renderPhrasesView();
   } else if(state.currentView.type === 'companies'){
     el.innerHTML = renderCompaniesView();
+  } else if(state.currentView.type === 'phoneAssistant'){
+    el.innerHTML = renderPhoneAssistantView();
+  } else if(state.currentView.type === 'today'){
+    el.innerHTML = renderTodayView();
   } else {
     // 이전 버전 호환: 더 이상 없는 화면(할 일 목록·사이트 바로가기 등)이면 첫 가이드로 이동
     // 할 일 목록은 상단 📝 노트 패널로 이동했습니다.
@@ -2180,9 +2274,751 @@ document.getElementById('aiNoteInput').addEventListener('keydown', (e)=>{
   }
 });
 
+/* ==========================================================================
+   전화 비서 (통화 중 실시간 업무비서)
+   - 통화 중에는 짧은 단어/문장만 입력한다. 정확한 키워드 일치가 아니라
+     동의어(PHONE_INTENT_GROUPS)를 기준으로 의도를 인식한다.
+   - 화면에 보여주는 정보(전화대사/업무순서/자료위치/관할담당자/업체정보)는
+     전부 state(guides/phrases/companies/materials/jurisdictions/sites)에서
+     찾아서 보여줄 뿐, AI가 지어내지 않는다. 등록된 정보가 없으면 그렇게 표시한다.
+   - 통화 세션 자체는 state에 저장하지 않는다(통화 중 임시 작업 메모이며,
+     기존 Firebase 컬렉션 구조에는 전혀 영향을 주지 않는다).
+   ========================================================================== */
+
+// 짧은 입력을 같은 업무 의도로 묶어주는 동의어 사전. 새 의도가 필요하면 이 배열에 항목만 추가하면 된다.
+const PHONE_INTENT_GROUPS = [
+  { tag:'체결',      keywords:['체결','협약','mou','MOU','제휴','업무협약'] },
+  { tag:'시방서',    keywords:['시방서','시방'] },
+  { tag:'공법설명회', keywords:['공법설명회','설명회','공법 설명','공법설명'] },
+  { tag:'자료요청',  keywords:['자료','자료달라','자료줘','자료요청','보내달라','발송해'] },
+  { tag:'담당자',    keywords:['담당자','담당','지사','연락처','전화번호','누가'] },
+  { tag:'견적',      keywords:['견적','견적문의','비용','가격'] },
+  { tag:'특허',      keywords:['특허','특허번호','인증'] },
+  { tag:'현장등록',  keywords:['현장등록','현장 등록'] },
+  { tag:'질문서',    keywords:['질문서','질의서'] },
+];
+// 관할 담당자 조회에 사용하는 광역 지역명
+const PHONE_REGION_LIST = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
+// 자료 요청으로 볼 수 있는 의도 — 이 태그가 인식됐는데 등록된 자료가 없으면 "확인 필요"로 명시한다
+const MATERIAL_REQUEST_TAGS = ['시방서','자료요청','질문서','특허'];
+
+function textIncludesAny(text, keywords){
+  const t = String(text||'').toLowerCase().replace(/\s+/g,'');
+  return keywords.some(k => t.includes(String(k).toLowerCase().replace(/\s+/g,'')));
+}
+function detectIntents(line){
+  return PHONE_INTENT_GROUPS.filter(g => textIncludesAny(line, g.keywords)).map(g => g.tag);
+}
+function detectRegion(line){ return PHONE_REGION_LIST.find(r => line.includes(r)) || null; }
+function detectSite(line){
+  const norm = line.replace(/\s+/g,'');
+  return state.sites.find(s => s.name && norm.includes(s.name.replace(/\s+/g,''))) || null;
+}
+function detectCompany(line){
+  const norm = line.replace(/\s+/g,'').toLowerCase();
+  return state.companies.find(c => c.name && norm.includes(c.name.replace(/\s+/g,'').toLowerCase())) || null;
+}
+
+// 인식된 의도(tag) 목록으로 "지금 말할 내용"을 찾는다. 자주 쓰는 멘트 → 업무 가이드의 메모 순으로 우선 참고한다.
+// (오늘 업무 비서의 "전화할 때" 항목도 이 함수를 그대로 재사용한다.)
+function findScriptForTags(tags){
+  for(const tag of [...tags].reverse()){
+    const phraseHit = state.phrases.find(p => textIncludesAny(`${p.title} ${p.body}`, [tag]));
+    if(phraseHit) return { title: phraseHit.title, body: phraseHit.body };
+    for(const g of state.guides){
+      const blockHit = g.blocks.find(b => textIncludesAny(b.body, [tag]));
+      if(blockHit) return { title: g.title, body: blockHit.body };
+    }
+  }
+  return null;
+}
+
+let phoneSession = null; // 통화 세션(임시). [통화 종료]를 누르기 전까지 render()가 반복돼도 유지된다.
+function newPhoneSession(){
+  return {
+    active:true, notes:[], matchedIntents:[], region:null, site:null, company:null, firstLine:'',
+    endedAt:null, report:null, followups:[],
+    lastScript:null, lastMaterial:null, lastJurisdiction:null
+  };
+}
+function addPhoneNote(text){
+  if(!phoneSession) phoneSession = newPhoneSession();
+  const line = String(text||'').trim();
+  if(!line) return;
+  if(!phoneSession.notes.length) phoneSession.firstLine = line;
+  phoneSession.notes.push({ text: line, intents: detectIntents(line) });
+  const region = detectRegion(line); if(region) phoneSession.region = region;
+  const site = detectSite(line); if(site) phoneSession.site = site;
+  const company = detectCompany(line); if(company) phoneSession.company = company;
+  detectIntents(line).forEach(tag => {
+    if(!phoneSession.matchedIntents.includes(tag)) phoneSession.matchedIntents.push(tag);
+  });
+}
+function findPhoneProcedure(){
+  const tags = phoneSession.matchedIntents;
+  if(!tags.length) return null;
+  let best = null, bestScore = 0;
+  state.guides.forEach(g => {
+    const haystack = `${g.tag||''} ${g.title||''} ${g.steps.map(s=>s.label).join(' ')}`;
+    const score = tags.filter(tag => textIncludesAny(haystack, [tag])).length;
+    if(score > bestScore){ bestScore = score; best = g; }
+  });
+  return best;
+}
+function findPhoneMaterial(){
+  const tags = phoneSession.matchedIntents;
+  for(const tag of [...tags].reverse()){
+    const hit = state.materials.find(m => textIncludesAny(m.name, [tag]));
+    if(hit) return hit;
+  }
+  return null;
+}
+
+function buildPhoneCallReport(s){
+  const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '상대방');
+  const lines = [`${who}${/님|소장|담당자|과장|부장|팀장|대표$/.test(who) ? '' : ' 관계자'}께서 전화 문의주셨습니다.`, ''];
+  const seen = new Set();
+  const SUMMARY_TEXT = {
+    '체결':'협약(체결) 관련 문의를 주셨습니다.',
+    '시방서':'시방서 자료를 요청하셨습니다.',
+    '공법설명회':'공법설명회 관련 문의를 주셨습니다.',
+    '자료요청':'관련 자료를 요청하셨습니다.',
+    '담당자':'담당자 확인을 요청하셨습니다.',
+    '견적':'견적 문의를 주셨습니다.',
+    '특허':'특허 관련 문의를 주셨습니다.',
+    '현장등록':'현장등록 관련 문의를 주셨습니다.',
+    '질문서':'질문서 관련 문의를 주셨습니다.'
+  };
+  s.notes.forEach(n => n.intents.forEach(tag => {
+    if(seen.has(tag) || !SUMMARY_TEXT[tag]) return;
+    seen.add(tag);
+    lines.push(SUMMARY_TEXT[tag]);
+  }));
+  if(lines.length === 2) lines.push('세부 문의 내용은 아래 통화 메모를 참고해주세요.');
+  lines.push('', '[통화 메모]');
+  s.notes.forEach(n => lines.push(`- ${n.text}`));
+  return lines.join('\n');
+}
+function buildPhoneFollowups(s){
+  const out = [];
+  const tags = s.matchedIntents;
+  if(tags.some(t => MATERIAL_REQUEST_TAGS.includes(t))){
+    const m = findPhoneMaterial();
+    out.push({ text: m ? `${m.name} 발송 필요` : '요청 자료 발송 필요 (자료 위치 확인 필요)', status:'material', materialId: m?m.id:null });
+  }
+  if(tags.includes('담당자') && !(s.region && state.jurisdictions.find(j=>j.region===s.region))){
+    out.push({ text:'담당자 확인 필요', status:'contactcheck' });
+  }
+  if(tags.includes('견적')) out.push({ text:'견적 확인 필요', status:'unhandled' });
+  if(tags.includes('체결')) out.push({ text:'체결 진행 상황 콜백 필요', status:'callback' });
+  return out;
+}
+
+async function polishPhoneReport(apiKey){
+  const s = phoneSession;
+  if(!s || !s.report) return;
+  try{
+    showToast('AI로 다듬는 중...');
+    const prompt = `아래는 전화 통화 내용을 정리한 업무보고 초안이야. 사실 내용을 절대 바꾸지 말고, 문장만 정중하고 자연스럽게 다듬어줘. 새로운 사실을 추가하지 마.\n\n${s.report}\n\n다듬은 보고 문구만 출력해.`;
+    const result = await callOpenAI(apiKey, prompt);
+    if(result){ s.report = result; render(); }
+  }catch(err){ console.error(err); showToast('AI 다듬기에 실패했습니다'); }
+}
+
+function renderPhoneAssistantView(){
+  if(!phoneSession) phoneSession = newPhoneSession();
+  const s = phoneSession;
+  if(s.endedAt) return renderPhoneCallEndedView(s);
+
+  const counterpart = s.company ? `🏢 ${escapeHtml(s.company.name)}`
+    : s.site ? `🏠 ${escapeHtml(s.site.name)}`
+    : s.firstLine ? escapeHtml(s.firstLine)
+    : '통화 상대 미확인';
+
+  const script = findScriptForTags(s.matchedIntents);
+  const procedure = findPhoneProcedure();
+  const material = findPhoneMaterial();
+  const wantsMaterial = s.matchedIntents.some(t => MATERIAL_REQUEST_TAGS.includes(t));
+  const jurisdiction = s.region ? (state.jurisdictions.find(j=>j.region===s.region) || 'missing') : null;
+  const checkSteps = procedure ? procedure.steps.filter(st => /확인/.test(st.label)) : [];
+
+  s.lastScript = script;
+  s.lastMaterial = material;
+  s.lastJurisdiction = (jurisdiction && jurisdiction !== 'missing') ? jurisdiction : null;
+
+  const nothingYet = !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
+
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>📞 전화 비서</h1>
+      <p>통화하면서 단어·짧은 문장만 입력해도 지금 필요한 정보를 바로 보여드립니다.</p>
+    </div>
+
+    <div class="card pa-callbar">
+      <div class="pa-callbar-head">
+        <div>
+          <div class="pa-callbar-label">현재 통화</div>
+          <div class="pa-callbar-who">${counterpart}</div>
+        </div>
+        <button type="button" class="btn btn-ghost" data-pa-action="end-call">통화 종료</button>
+      </div>
+      <form class="inline-form" data-pa-form="add-note" style="margin-top:14px;">
+        <input type="text" id="paInput" placeholder="예: 부산 덕천주공1단지 / 시방서 / 체결 문의" autocomplete="off" />
+        <button type="submit">입력</button>
+      </form>
+      ${s.notes.length ? `<div class="pa-notes-log">${s.notes.map(n => `<div class="pa-note-line">· ${escapeHtml(n.text)}</div>`).join('')}</div>` : ''}
+    </div>
+
+    ${script ? `
+      <div class="card highlight">
+        <div class="card-title">🗣️ 지금 말할 내용</div>
+        <div class="card-body">${escapeHtml(script.body)}</div>
+        <div class="card-actions" style="margin-top:10px;"><button class="copy-btn" data-pa-action="copy-script">📋 복사</button></div>
+      </div>
+    ` : ''}
+
+    ${procedure ? `
+      <div class="card">
+        <div class="card-title">📋 지금 해야 할 업무 순서 — ${escapeHtml(procedure.title)}</div>
+        <div class="steps-row" style="margin-bottom:0;">
+          ${procedure.steps.map((st,i) => `
+            ${i>0?'<span class="step-arrow">→</span>':''}
+            <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(st.label)}</span>
+          `).join('') || '<span class="empty-state" style="padding:0;">등록된 단계가 없습니다</span>'}
+        </div>
+      </div>
+    ` : ''}
+
+    ${material || wantsMaterial ? `
+      <div class="card">
+        <div class="card-title">📎 관련 자료</div>
+        ${material ? `
+          <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
+            <div class="company-info-item"><span class="company-info-label">자료명</span><span class="company-info-val">${escapeHtml(material.name)}</span></div>
+            <div class="company-info-item company-info-wide"><span class="company-info-label">자료 위치</span><span class="company-info-val">${escapeHtml(material.location)}</span></div>
+          </div>
+          <button class="copy-btn" style="margin-top:10px;" data-pa-action="copy-material">📋 위치 복사</button>
+        ` : `<div class="pa-missing">등록된 자료 없음 — 확인 필요</div>`}
+      </div>
+    ` : ''}
+
+    ${s.region ? `
+      <div class="card">
+        <div class="card-title">📍 관할 담당자</div>
+        ${s.lastJurisdiction ? `
+          <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
+            <div class="company-info-item"><span class="company-info-label">관할 지역</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.region)}</span></div>
+            <div class="company-info-item"><span class="company-info-label">지사</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.branch||'-')}</span></div>
+            <div class="company-info-item"><span class="company-info-label">담당자</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.manager||'-')}</span></div>
+            <div class="company-info-item"><span class="company-info-label">연락처</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.phone||'-')}</span></div>
+          </div>
+          ${s.lastJurisdiction.phone ? `<button class="copy-btn" style="margin-top:10px;" data-pa-action="copy-jurisdiction-phone">📋 번호 복사</button>` : ''}
+        ` : `<div class="pa-missing">등록된 담당자 정보 없음</div>`}
+      </div>
+    ` : ''}
+
+    ${s.company ? `
+      <div class="card">
+        <div class="card-title">🏢 업체 정보 — ${escapeHtml(s.company.name)}</div>
+        <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
+          <div class="company-info-item"><span class="company-info-label">담당자</span><span class="company-info-val">${escapeHtml(s.company.contactName||'-')}</span></div>
+          <div class="company-info-item"><span class="company-info-label">전화번호</span><span class="company-info-val">${escapeHtml(s.company.phone||'-')}</span></div>
+          ${s.company.memo ? `<div class="company-info-item company-info-wide"><span class="company-info-label">기존 메모</span><span class="company-info-val">${escapeHtml(s.company.memo)}</span></div>` : ''}
+        </div>
+      </div>
+    ` : ''}
+    ${s.site ? `
+      <div class="card">
+        <div class="card-title">🏠 아파트/현장 정보 — ${escapeHtml(s.site.name)}</div>
+        <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
+          <div class="company-info-item"><span class="company-info-label">지역</span><span class="company-info-val">${escapeHtml(s.site.region||'-')}</span></div>
+          ${s.site.memo ? `<div class="company-info-item company-info-wide"><span class="company-info-label">메모</span><span class="company-info-val">${escapeHtml(s.site.memo)}</span></div>` : ''}
+        </div>
+      </div>
+    ` : ''}
+
+    ${checkSteps.length ? `
+      <div class="card">
+        <div class="card-title">✅ 통화 중 확인해야 할 추가 항목</div>
+        ${checkSteps.map(st => `<div class="pa-check-item">· ${escapeHtml(st.label)}</div>`).join('')}
+      </div>
+    ` : ''}
+
+    ${nothingYet ? `<div class="empty-state">입력한 내용과 일치하는 저장된 정보가 아직 없습니다. 단어를 더 입력해보세요.</div>` : ''}
+
+    <div class="card" style="margin-top:24px;">
+      <div class="card-head"><div class="card-title" style="margin:0;">⚙️ 전화 비서 참고 데이터 관리</div></div>
+      ${renderPhoneAdminPanel()}
+    </div>
+  `;
+}
+
+function renderPhoneCallEndedView(s){
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>📞 전화 비서 — 통화 종료</h1>
+      <p>통화 메모를 바탕으로 보고 문구와 후속 업무를 정리했습니다.</p>
+    </div>
+    <div class="card highlight">
+      <div class="card-head">
+        <div class="card-title" style="margin:0;">📝 통화내용 정리</div>
+        <div class="card-actions">
+          <button class="copy-btn" data-pa-action="copy-report">📋 복사</button>
+          <button class="icon-btn" data-pa-action="ai-polish-report" title="AI로 다듬기">✨</button>
+        </div>
+      </div>
+      <div class="card-body">${escapeHtml(s.report)}</div>
+    </div>
+    ${s.followups.length ? `
+      <div class="card">
+        <div class="card-title">✅ 후속 업무</div>
+        ${s.followups.map((f,i) => `
+          <div class="pa-followup-item">
+            <span>${escapeHtml(f.text)}</span>
+            <button class="copy-btn" data-pa-action="add-todo" data-index="${i}">+ 오늘 할 일에 추가</button>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">이번 통화 메모</div>
+      ${s.notes.map(n=>`<div class="pa-note-line">· ${escapeHtml(n.text)}</div>`).join('')}
+    </div>
+    <button type="button" class="fab-add" data-pa-action="new-call">+ 새 통화 시작</button>
+  `;
+}
+
+/* 전화 비서 참고 데이터(관할담당자/자료위치/아파트·현장) 관리 — 나중에 언제든 추가/수정/삭제 가능 */
+function renderPhoneAdminPanel(){
+  return `
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>📍 관할 담당자 (${state.jurisdictions.length})</span><button class="copy-btn" data-pa-action="jur-add">+ 추가</button></div>
+      ${state.jurisdictions.map(j => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(j.region)} · ${escapeHtml(j.branch||'-')} · ${escapeHtml(j.manager||'-')} · ${escapeHtml(j.phone||'-')}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn" data-pa-action="jur-edit" data-id="${j.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="jur-delete" data-id="${j.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 관할 담당자가 없습니다</div>'}
+    </div>
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>📎 자료 위치 (${state.materials.length})</span><button class="copy-btn" data-pa-action="mat-add">+ 추가</button></div>
+      ${state.materials.map(m => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(m.name)} · ${escapeHtml(m.location)}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn" data-pa-action="mat-edit" data-id="${m.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="mat-delete" data-id="${m.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 자료가 없습니다</div>'}
+    </div>
+    <div class="pa-admin-group">
+      <div class="pa-admin-head"><span>🏠 아파트/현장 (${state.sites.length})</span><button class="copy-btn" data-pa-action="site-add">+ 추가</button></div>
+      ${state.sites.map(st => `
+        <div class="pa-admin-row">
+          <span>${escapeHtml(st.name)} · ${escapeHtml(st.region||'-')}</span>
+          <span class="pa-admin-actions">
+            <button class="icon-btn" data-pa-action="site-edit" data-id="${st.id}">✎</button>
+            <button class="icon-btn danger" data-pa-action="site-delete" data-id="${st.id}">🗑</button>
+          </span>
+        </div>
+      `).join('') || '<div class="empty-state" style="padding:12px 0;">등록된 아파트/현장이 없습니다</div>'}
+    </div>
+  `;
+}
+function openPhoneJurisdictionModal(id){
+  const existing = id ? state.jurisdictions.find(j=>j.id===id) : null;
+  openModal({
+    title: existing ? '관할 담당자 수정' : '관할 담당자 추가', submitLabel:'저장',
+    fields:[
+      {name:'region', label:'관할 지역 (예: 부산)', value: existing?existing.region:''},
+      {name:'branch', label:'지사', value: existing?existing.branch:''},
+      {name:'manager', label:'담당자', value: existing?existing.manager:''},
+      {name:'phone', label:'연락처', value: existing?existing.phone:''}
+    ],
+    onSubmit(data){
+      if(!data.region) return;
+      if(existing) Object.assign(existing, data);
+      else state.jurisdictions.push({id:uid(), ...data});
+      saveState(); render();
+    }
+  });
+}
+function openPhoneMaterialModal(id){
+  const existing = id ? state.materials.find(m=>m.id===id) : null;
+  openModal({
+    title: existing ? '자료 위치 수정' : '자료 위치 추가', submitLabel:'저장',
+    fields:[
+      {name:'name', label:'자료명 (예: 시방서)', value: existing?existing.name:''},
+      {name:'location', label:'자료 위치 (예: 홈페이지 → 자료실 → 시방서)', value: existing?existing.location:''},
+      {name:'url', label:'링크 (선택)', value: existing?existing.url:''}
+    ],
+    onSubmit(data){
+      if(!data.name) return;
+      if(existing) Object.assign(existing, data);
+      else state.materials.push({id:uid(), ...data});
+      saveState(); render();
+    }
+  });
+}
+function openPhoneSiteModal(id){
+  const existing = id ? state.sites.find(s=>s.id===id) : null;
+  openModal({
+    title: existing ? '아파트/현장 수정' : '아파트/현장 추가', submitLabel:'저장',
+    fields:[
+      {name:'name', label:'아파트/현장명', value: existing?existing.name:''},
+      {name:'region', label:'지역', value: existing?existing.region:''},
+      {name:'memo', label:'메모', type:'textarea', value: existing?existing.memo:''}
+    ],
+    onSubmit(data){
+      if(!data.name) return;
+      if(existing) Object.assign(existing, data);
+      else state.sites.push({id:uid(), ...data});
+      saveState(); render();
+    }
+  });
+}
+
+contentEl.addEventListener('submit', (e)=>{
+  const form = e.target.closest('[data-pa-form="add-note"]');
+  if(!form) return;
+  e.preventDefault();
+  const input = form.querySelector('#paInput');
+  const text = input.value;
+  if(!text.trim()) return;
+  addPhoneNote(text);
+  input.value = '';
+  render();
+  requestAnimationFrame(()=>{ const el = document.getElementById('paInput'); if(el) el.focus(); });
+});
+
+contentEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-pa-action]');
+  if(!btn) return;
+  const action = btn.dataset.paAction;
+  if(action === 'end-call'){
+    if(!phoneSession || !phoneSession.notes.length){ showToast('입력된 통화 메모가 없습니다'); return; }
+    phoneSession.endedAt = Date.now();
+    phoneSession.report = buildPhoneCallReport(phoneSession);
+    phoneSession.followups = buildPhoneFollowups(phoneSession);
+    render();
+  } else if(action === 'new-call'){
+    phoneSession = newPhoneSession();
+    render();
+  } else if(action === 'copy-script'){
+    if(phoneSession.lastScript) copyText(phoneSession.lastScript.body);
+  } else if(action === 'copy-material'){
+    if(phoneSession.lastMaterial) copyText(phoneSession.lastMaterial.url || phoneSession.lastMaterial.location);
+  } else if(action === 'copy-jurisdiction-phone'){
+    if(phoneSession.lastJurisdiction) copyText(phoneSession.lastJurisdiction.phone || '');
+  } else if(action === 'copy-report'){
+    copyText(phoneSession.report || '');
+  } else if(action === 'ai-polish-report'){
+    const apiKey = getOpenAIKey();
+    if(!apiKey){ promptForOpenAIKey((key)=> polishPhoneReport(key)); return; }
+    polishPhoneReport(apiKey);
+  } else if(action === 'add-todo'){
+    const f = phoneSession.followups[Number(btn.dataset.index)];
+    if(!f) return;
+    const who = phoneSession.company ? phoneSession.company.name : phoneSession.site ? phoneSession.site.name : (phoneSession.firstLine || '');
+    state.todos.push({id:uid(), text: who ? `${who} — ${f.text}` : f.text, done:false});
+    // 오늘 업무 비서와 연결: 같은 업체/현장 ID를 참조하는 업무 카드로도 함께 등록한다 (요청에 따라 자동 등록, 삭제되지 않음)
+    state.workItems.push({
+      id:uid(),
+      companyId: phoneSession.company ? phoneSession.company.id : null,
+      siteId: phoneSession.site ? phoneSession.site.id : null,
+      who,
+      title: f.text,
+      status: f.status,
+      reason: `전화 메모 "${phoneSession.notes.map(n=>n.text).join(' / ')}" 에서 확인됨`,
+      nextAction: f.text,
+      materialId: f.materialId || null,
+      createdAt: Date.now(),
+      done:false,
+      snoozedUntil:null
+    });
+    saveState(); render();
+    showToast('오늘 할 일 · 오늘 업무에 추가되었습니다');
+  } else if(action === 'jur-add'){ openPhoneJurisdictionModal(); }
+  else if(action === 'jur-edit'){ openPhoneJurisdictionModal(btn.dataset.id); }
+  else if(action === 'jur-delete'){
+    if(confirm('삭제할까요?')){ state.jurisdictions = state.jurisdictions.filter(j=>j.id!==btn.dataset.id); saveState(); render(); }
+  }
+  else if(action === 'mat-add'){ openPhoneMaterialModal(); }
+  else if(action === 'mat-edit'){ openPhoneMaterialModal(btn.dataset.id); }
+  else if(action === 'mat-delete'){
+    if(confirm('삭제할까요?')){ state.materials = state.materials.filter(m=>m.id!==btn.dataset.id); saveState(); render(); }
+  }
+  else if(action === 'site-add'){ openPhoneSiteModal(); }
+  else if(action === 'site-edit'){ openPhoneSiteModal(btn.dataset.id); }
+  else if(action === 'site-delete'){
+    if(confirm('삭제할까요?')){ state.sites = state.sites.filter(s=>s.id!==btn.dataset.id); saveState(); render(); }
+  }
+});
+
+/* ==========================================================================
+   오늘 업무 비서
+   - "할 일"이 아니라 실제 기록(전화 비서 후속업무, 직접 등록)만 업무 카드로 만든다.
+   - 완료되지 않았고(snoozedUntil이 지났거나 없는) 카드만 오늘 목록에 뜬다.
+   - AI는 문장 정리에만 쓰고, 담당자/전화번호/자료위치/진행상태는 항상 state에서만 가져온다.
+   ========================================================================== */
+
+const TODAY_STATUS_META = {
+  urgent:       { label:'긴급',       tagClass:'st-urgent',   doneLabel:'완료',      weight:0 },
+  callback:     { label:'콜백',       tagClass:'st-callback', doneLabel:'전화 완료', weight:1 },
+  material:     { label:'자료발송',   tagClass:'st-material', doneLabel:'발송 완료', weight:2 },
+  replywait:    { label:'회신대기',   tagClass:'',            doneLabel:'회신 확인', weight:3 },
+  contactcheck: { label:'담당자확인', tagClass:'',            doneLabel:'확인 완료', weight:3 },
+  waiting:      { label:'대기',       tagClass:'',            doneLabel:'자료 수령', weight:4 },
+  unhandled:    { label:'미처리',     tagClass:'',            doneLabel:'완료',      weight:5 },
+  meeting:      { label:'미팅',       tagClass:'',            doneLabel:'미팅 등록', weight:5 },
+};
+
+function activeWorkItems(){
+  const now = Date.now();
+  return state.workItems.filter(w => !w.done && (!w.snoozedUntil || w.snoozedUntil <= now));
+}
+function sortWorkItems(items){
+  return items.slice().sort((a,b) => {
+    const wa = (TODAY_STATUS_META[a.status]||{}).weight ?? 9;
+    const wb = (TODAY_STATUS_META[b.status]||{}).weight ?? 9;
+    if(wa !== wb) return wa - wb;
+    return (a.createdAt||0) - (b.createdAt||0);
+  });
+}
+function workItemCompany(w){ return w.companyId ? state.companies.find(c=>c.id===w.companyId) : null; }
+function workItemSite(w){ return w.siteId ? state.sites.find(s=>s.id===w.siteId) : null; }
+function workItemMaterial(w){ return w.materialId ? state.materials.find(m=>m.id===w.materialId) : null; }
+function workItemJurisdiction(w){
+  const site = workItemSite(w);
+  const region = site && site.region;
+  if(!region) return null;
+  return state.jurisdictions.find(j=>j.region===region) || undefined; // undefined = 지역은 있으나 담당자 미등록
+}
+
+let expandedWorkItemId = null;
+
+function renderTodayView(){
+  const items = sortWorkItems(activeWorkItems());
+  const counts = {};
+  items.forEach(w => { counts[w.status] = (counts[w.status]||0) + 1; });
+
+  return `
+    <div class="view-topbar"><span class="crumb">TOOLS</span></div>
+    <div class="view-header">
+      <h1>🗂 오늘 업무</h1>
+      <p>전화 비서 후속업무와 직접 등록한 업무를 모아 우선순위대로 보여드립니다.</p>
+    </div>
+    <div class="today-summary-bar">
+      <span class="today-summary-count">오늘 먼저 처리할 업무 ${items.length}건</span>
+      ${Object.keys(TODAY_STATUS_META).filter(k=>counts[k]).map(k => `<span class="today-chip ${k==='urgent'?'urgent':''}">${TODAY_STATUS_META[k].label} ${counts[k]}</span>`).join('')}
+    </div>
+    <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button type="button" class="copy-btn" data-tw-action="add-open">+ 업무 직접 추가</button>
+      <button type="button" class="copy-btn" data-tw-action="show-summary">오늘 업무 정리 보기</button>
+    </div>
+    <div id="todaySummaryArea"></div>
+    <div class="today-list">
+      ${items.map(w => renderTodayCard(w)).join('') || '<div class="today-empty">지금 처리할 업무가 없습니다.</div>'}
+    </div>
+  `;
+}
+function renderTodayCard(w){
+  const meta = TODAY_STATUS_META[w.status] || {label:w.status, tagClass:'', doneLabel:'완료'};
+  const company = workItemCompany(w);
+  const site = workItemSite(w);
+  const who = company ? company.name : site ? site.name : (w.who || '');
+  const expanded = expandedWorkItemId === w.id;
+  return `
+    <div class="today-card ${expanded?'expanded':''}" data-tw-action="toggle" data-id="${w.id}">
+      <div class="today-card-top">
+        <span class="today-status-tag ${meta.tagClass}">${escapeHtml(meta.label)}</span>
+        <span class="today-card-title">${who ? escapeHtml(who) + ' — ' : ''}${escapeHtml(w.title)}</span>
+      </div>
+      ${w.nextAction ? `<div class="today-card-sub">→ ${escapeHtml(w.nextAction)}</div>` : ''}
+      ${expanded ? renderTodayDetail(w, meta, company, site) : ''}
+    </div>
+  `;
+}
+function renderTodayDetail(w, meta, company, site){
+  const material = workItemMaterial(w);
+  const jurisdiction = workItemJurisdiction(w);
+  const script = findScriptForTags(detectIntents(`${w.title} ${w.nextAction||''} ${w.reason||''}`));
+  const rows = [['현재 상태', meta.label]];
+  if(w.reason) rows.push(['왜 표시됐나요?', w.reason]);
+  if(w.nextAction) rows.push(['지금 해야 할 일', w.nextAction]);
+  return `
+    <div class="today-detail" onclick="event.stopPropagation()">
+      ${rows.map(([label,val]) => `
+        <div class="today-detail-row">
+          <div class="today-detail-label">${escapeHtml(label)}</div>
+          <div class="today-detail-val">${escapeHtml(val)}</div>
+        </div>
+      `).join('')}
+      ${script ? `<div class="today-detail-row"><div class="today-detail-label">전화할 때</div><div class="today-detail-val">${escapeHtml(script.body)}</div></div>` : ''}
+      ${material ? `
+        <div class="today-detail-row"><div class="today-detail-label">필요 자료 / 자료 위치</div><div class="today-detail-val">${escapeHtml(material.name)} — ${escapeHtml(material.location)}</div></div>
+      ` : (w.status==='material' ? `
+        <div class="today-detail-row"><div class="today-detail-label">필요 자료 / 자료 위치</div><div class="today-detail-val pa-missing">등록된 자료 없음 — 확인 필요</div></div>
+      ` : '')}
+      ${jurisdiction === undefined ? `
+        <div class="today-detail-row"><div class="today-detail-label">관할 담당자</div><div class="today-detail-val pa-missing">등록된 관할 담당자 정보 없음</div></div>
+      ` : jurisdiction ? `
+        <div class="today-detail-row">
+          <div class="today-detail-label">관할 담당자 / 전화번호</div>
+          <div class="today-detail-val">${escapeHtml(jurisdiction.branch||'-')} · ${escapeHtml(jurisdiction.manager||'-')} · ${escapeHtml(jurisdiction.phone||'-')}
+            ${jurisdiction.phone ? ` <button class="copy-btn" data-tw-action="copy-phone" data-phone="${escapeHtml(jurisdiction.phone)}">복사</button>` : ''}
+          </div>
+        </div>
+      ` : ''}
+      ${company && company.memo ? `<div class="today-detail-row"><div class="today-detail-label">관련 과거 기록 (업체 메모)</div><div class="today-detail-val">${escapeHtml(company.memo)}</div></div>` : ''}
+      <div class="today-actions">
+        <button class="copy-btn" data-tw-action="done" data-id="${w.id}">${escapeHtml(meta.doneLabel)}</button>
+        <button class="copy-btn" data-tw-action="call-start" data-id="${w.id}">📞 전화 시작</button>
+        <button class="copy-btn" data-tw-action="snooze-menu" data-id="${w.id}">나중에</button>
+      </div>
+      <div class="today-snooze-menu" id="snoozeMenu-${w.id}" style="display:none;">
+        <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="30">30분 후</button>
+        <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="240">오후</button>
+        <button class="copy-btn" data-tw-action="snooze" data-id="${w.id}" data-minutes="1440">내일</button>
+        <input type="datetime-local" id="snoozeCustom-${w.id}" class="search-box" style="width:170px;height:34px;font-size:12px;padding:4px 8px;" />
+        <button class="copy-btn" data-tw-action="snooze-custom" data-id="${w.id}">적용</button>
+      </div>
+    </div>
+  `;
+}
+
+async function polishDailySummary(apiKey){
+  const el = document.getElementById('todaySummaryText');
+  if(!el) return;
+  const raw = el.textContent;
+  try{
+    showToast('보고용 문구 정리 중...');
+    const prompt = `아래는 오늘 처리한 업무 현황 메모야. 사실을 바꾸지 말고 "오늘 처리한 업무 / 진행 중 업무 / 확인 필요한 업무 / 내일 할 업무" 순서의 보고용 문장으로 정리해줘. 다른 설명 없이 정리된 문구만 출력해.\n\n${raw}`;
+    const result = await callOpenAI(apiKey, prompt);
+    if(result) el.textContent = result;
+  }catch(err){ console.error(err); showToast('정리에 실패했습니다'); }
+}
+
+contentEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-tw-action]');
+  if(!btn) return;
+  const action = btn.dataset.twAction;
+  if(action === 'toggle'){
+    expandedWorkItemId = expandedWorkItemId === btn.dataset.id ? null : btn.dataset.id;
+    render();
+  } else if(action === 'done'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!w) return;
+    w.done = true; w.doneAt = Date.now();
+    saveState(); render();
+    showToast('완료 처리되었습니다');
+  } else if(action === 'call-start'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!w) return;
+    const company = workItemCompany(w), site = workItemSite(w);
+    phoneSession = newPhoneSession();
+    addPhoneNote(company ? company.name : site ? site.name : (w.who || w.title));
+    if(w.title) addPhoneNote(w.title);
+    state.currentView = {type:'phoneAssistant'};
+    saveState(); render();
+  } else if(action === 'snooze-menu'){
+    const el = document.getElementById('snoozeMenu-'+btn.dataset.id);
+    if(el) el.style.display = (el.style.display === 'none' || !el.style.display) ? 'flex' : 'none';
+  } else if(action === 'snooze'){
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!w) return;
+    w.snoozedUntil = Date.now() + Number(btn.dataset.minutes) * 60000;
+    saveState(); render();
+    showToast('나중에 다시 표시됩니다');
+  } else if(action === 'snooze-custom'){
+    const input = document.getElementById('snoozeCustom-'+btn.dataset.id);
+    const w = state.workItems.find(w=>w.id===btn.dataset.id);
+    if(!input || !input.value || !w) return;
+    const ts = new Date(input.value).getTime();
+    if(isNaN(ts)) return;
+    w.snoozedUntil = ts;
+    saveState(); render();
+    showToast('나중에 다시 표시됩니다');
+  } else if(action === 'copy-phone'){
+    copyText(btn.dataset.phone || '');
+  } else if(action === 'add-open'){
+    openModal({
+      title:'업무 직접 추가', submitLabel:'추가',
+      fields:[
+        {name:'title', label:'업무 제목 (예: 사업자등록증 미수령)'},
+        {name:'companyName', label:'업체명 (등록된 업체명과 같으면 자동 연결)', placeholder:'선택 입력'},
+        {name:'status', label:'상태 (urgent/callback/material/waiting/replywait/contactcheck/unhandled/meeting)', value:'unhandled'},
+        {name:'reason', label:'왜 필요한가요?', type:'textarea'},
+        {name:'nextAction', label:'지금 해야 할 일', type:'textarea'}
+      ],
+      onSubmit(data){
+        if(!data.title) return;
+        const company = data.companyName ? state.companies.find(c=>c.name.toLowerCase()===data.companyName.toLowerCase()) : null;
+        const status = TODAY_STATUS_META[data.status] ? data.status : 'unhandled';
+        state.workItems.push({
+          id:uid(), companyId: company?company.id:null, siteId:null,
+          who: company ? company.name : (data.companyName || ''),
+          title:data.title, status, reason:data.reason||'', nextAction:data.nextAction||'',
+          materialId:null, createdAt:Date.now(), done:false, snoozedUntil:null
+        });
+        saveState(); render();
+      }
+    });
+  } else if(action === 'show-summary'){
+    const area = document.getElementById('todaySummaryArea');
+    if(!area) return;
+    const startOfDay = new Date(); startOfDay.setHours(0,0,0,0);
+    const doneToday = state.workItems.filter(w=>w.done && w.doneAt && w.doneAt >= startOfDay.getTime());
+    const pending = activeWorkItems();
+    const byStatusDone = {};
+    doneToday.forEach(w=>{ byStatusDone[w.status]=(byStatusDone[w.status]||0)+1; });
+    const lines = [`오늘 처리 ${doneToday.length}건`, `진행 중(대기) ${pending.length}건`];
+    Object.keys(byStatusDone).forEach(k=> lines.push(`${(TODAY_STATUS_META[k]||{label:k}).label} ${byStatusDone[k]}건 완료`));
+    area.innerHTML = `
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title" style="margin:0;">오늘 업무 정리</div>
+          <div class="card-actions">
+            <button class="copy-btn" data-tw-action="copy-daily-summary">📋 복사</button>
+            <button class="icon-btn" data-tw-action="ai-daily-summary" title="보고용 문구 만들기">✨</button>
+          </div>
+        </div>
+        <div class="card-body" id="todaySummaryText">${escapeHtml(lines.join('\n'))}</div>
+      </div>
+    `;
+  } else if(action === 'copy-daily-summary'){
+    const el = document.getElementById('todaySummaryText');
+    if(el) copyText(el.textContent);
+  } else if(action === 'ai-daily-summary'){
+    const apiKey = getOpenAIKey();
+    if(!apiKey){ promptForOpenAIKey((key)=>polishDailySummary(key)); return; }
+    polishDailySummary(apiKey);
+  }
+});
+
+function maybeShowMorningBriefing(){
+  const key = 'work-guide-last-briefing-date';
+  const today = new Date().toDateString();
+  if(localStorage.getItem(key) === today) return;
+  localStorage.setItem(key, today);
+  const items = activeWorkItems();
+  if(!items.length) return;
+  const counts = {};
+  items.forEach(w => counts[w.status] = (counts[w.status]||0)+1);
+  const parts = Object.keys(TODAY_STATUS_META).filter(k=>counts[k]).map(k=>`${TODAY_STATUS_META[k].label} ${counts[k]}`);
+  showToast(`좋은 아침입니다. 오늘 먼저 처리할 업무 ${items.length}건 (${parts.join(' · ')})`);
+}
+
 /* ---------- Init ---------- */
 function render(){ renderSidebar(); renderContent(); renderQuickLinks(); updateTodoBadge(); }
 render();
+maybeShowMorningBriefing();
 </script>
 </body>
 </html>
