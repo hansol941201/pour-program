@@ -32,6 +32,7 @@
     --sb-text:#1f2937;
     --sb-text-sub:#6b7280;
     --sb-text-faint:#9aa3af;
+    --topbar-h:150px; /* 4단 헤더(브랜드/검색/바로가기/오늘할일·알림·계정) 실측 높이 */
   }
   *{box-sizing:border-box;}
   body{
@@ -53,8 +54,8 @@
     display:flex;
     flex-direction:column;
     position:sticky;
-    top:75px;
-    height:calc(100vh - 75px);
+    top:var(--topbar-h,132px);
+    height:calc(100vh - var(--topbar-h,132px));
     overflow-y:auto;
   }
   .brand{display:flex;align-items:center;gap:12px;padding:0 2px 22px;position:relative;}
@@ -71,8 +72,22 @@
   .brand-edit-btn:hover{color:var(--sb-navy);}
   hr.sep{border:none;border-top:1px solid var(--sb-border);margin:0 0 22px;}
 
-  .nav-section{margin-bottom:26px;}
-  .nav-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
+  .nav-section{margin-bottom:20px;}
+  .nav-section-head{
+    display:flex;align-items:center;justify-content:space-between;cursor:pointer;
+    padding:2px;margin:0 2px 6px;user-select:none;
+  }
+  .nav-section-head .sidebar-group-label{margin:0;}
+  .nav-section-head:hover .sidebar-group-label{color:var(--sb-navy);}
+  .nav-section-head-actions{display:flex;align-items:center;gap:10px;flex:none;}
+  .nav-edit-toggle{
+    background:none;border:none;color:var(--sb-text-faint);font-size:11px;font-weight:700;
+    cursor:pointer;padding:2px 2px;
+  }
+  .nav-edit-toggle:hover, .nav-edit-toggle.active{color:var(--sb-navy);}
+  .nav-section-chevron{font-size:9px;color:var(--sb-text-faint);flex:none;}
+  .nav-section.collapsed .nav-list, .nav-section.collapsed .nav-add{display:none;}
+  .nav-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px;}
   .nav-item{
     display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:4px;
     border:1px solid var(--sb-border);background:var(--sb-bg);
@@ -89,9 +104,24 @@
     border-radius:4px;padding:1px 7px;min-width:18px;text-align:center;
   }
   .nav-item.active .badge{background:#fff;color:var(--sb-navy);}
+  /* 업무 가이드 목록: 큰 버튼형이 아니라 작은 텍스트 메뉴로 표시 */
+  .nav-list .nav-item{
+    padding:6px 8px 6px 10px;border:none;border-radius:5px;background:none;
+    font-size:12.5px;font-weight:500;border-left:2px solid transparent;
+  }
+  .nav-list .nav-item:hover{background:var(--sb-hover);border-left-color:transparent;}
+  .nav-list .nav-item.active{
+    background:var(--sb-hover);border-left-color:var(--sb-navy);color:var(--sb-navy);font-weight:700;
+  }
+  .nav-list .nav-item.active .badge{background:var(--sb-navy);color:#fff;}
+  .nav-list.edit-mode .nav-item{cursor:grab;padding-left:22px;position:relative;}
+  .nav-list.edit-mode .nav-item::before{
+    content:"⋮⋮";position:absolute;left:6px;top:50%;transform:translateY(-50%);
+    font-size:10px;letter-spacing:-1px;color:var(--sb-text-faint);line-height:1;
+  }
   .nav-add{
-    width:100%;text-align:left;background:var(--sb-bg);border:1px dashed var(--sb-border);color:var(--sb-text-sub);
-    padding:11px 14px;border-radius:4px;cursor:pointer;font-size:13px;
+    width:100%;text-align:left;background:none;border:1px dashed var(--sb-border);color:var(--sb-text-sub);
+    padding:7px 10px;border-radius:5px;cursor:pointer;font-size:11.5px;margin-top:4px;
   }
   .nav-add:hover{color:var(--sb-navy);border-color:var(--sb-navy);background:var(--sb-hover);}
   .sidebar-footer{
@@ -152,7 +182,7 @@
   .ai-composer-result-label{font-size:12px;font-weight:700;color:var(--text-gray);margin-bottom:6px;}
 
   /* Content */
-  .content{flex:1;padding:36px 44px;min-width:0;}
+  .content{flex:1;padding:28px 36px;min-width:0;}
   .view-topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
   .view-topbar .crumb{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--text-gray);}
   .crumb-group{display:inline-flex;align-items:center;gap:6px;}
@@ -220,16 +250,16 @@
   .phone-popover-hint{font-size:10.5px;color:var(--text-light-gray);margin-top:7px;}
 
   .card{
-    background:var(--card-bg);border:1px solid var(--card-border);border-radius:14px;
-    padding:22px 24px;margin-bottom:18px;
+    background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
+    padding:16px 18px;margin-bottom:14px;
   }
-  .card.highlight{border-top:4px solid var(--accent);}
+  .card.highlight{border:none;border-top:3px solid var(--accent);}
   .card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px;}
   .tag-pill{
     display:inline-block;background:var(--hover-blue-soft);color:var(--accent-dark);font-size:12px;font-weight:700;
     padding:4px 10px;border-radius:999px;margin-bottom:10px;
   }
-  .card-title{font-size:17px;font-weight:700;margin:0 0 12px;}
+  .card-title{font-size:16px;font-weight:700;margin:0 0 10px;}
   .card-body{white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--text-dark);}
   .card-actions{display:flex;gap:6px;flex-shrink:0;}
 
@@ -337,45 +367,48 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
   /* Top bar: 좌측 브랜드 + 우측 검색/오늘할일/알림/사용자 */
+  /* 상단 헤더: 브랜드 / 검색 / 바로가기 / 오늘할일·알림·계정 4단으로 나눠 각 단의 시각적 무게를 가볍게 유지한다 */
   .topbar{
     position:sticky;top:0;z-index:90;background:#fff;border-bottom:1px solid var(--card-border);
-    padding:16px 28px;
+    padding:12px 28px 10px;
   }
-  .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:20px;}
+  .topbar-row{display:flex;align-items:center;}
+  .topbar-row + .topbar-row{margin-top:7px;}
+  .topbar-row-actions{justify-content:flex-end;gap:6px;}
   .topbar-brand{
-    font-size:15px;font-weight:800;color:var(--navy);letter-spacing:.01em;flex:none;
+    font-size:14px;font-weight:800;color:var(--navy);letter-spacing:.01em;flex:none;
     background:none;border:none;padding:0;cursor:pointer;font-family:inherit;
   }
   .topbar-brand:hover{color:var(--accent-dark);}
   .topbar-brand .sep{color:var(--text-light-gray);font-weight:400;margin:0 6px;}
-  .search-wrap{position:relative;flex:0 0 200px;width:200px;}
+  .search-wrap{position:relative;flex:1 1 auto;max-width:420px;width:auto;}
   .search-box{
-    width:100%;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--card-border);
-    font-size:13.5px;font-family:inherit;background:var(--bg);color:var(--text-dark);
+    width:100%;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--card-border);
+    font-size:13px;font-family:inherit;background:var(--bg);color:var(--text-dark);
   }
   .search-box:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px var(--hover-blue-soft);}
 
-  /* 헤더 바로가기: 검색창 옆, 작은 텍스트 캡슐(아이콘 없음), 삭제(✕)는 평소 연하게·hover 시에만 진하게 */
-  .topbar-quicklinks{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  /* 헤더 바로가기: 검색창 아래 별도 줄, 아이콘 없는 작은 텍스트 캡슐. 테두리는 거의 없이 배경/hover로만 구분 */
+  .topbar-quicklinks{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:22px;}
   .qlink-chip{
-    display:inline-flex;align-items:center;background:var(--bg);border:1px solid var(--card-border);
+    display:inline-flex;align-items:center;background:none;border:none;
     border-radius:999px;overflow:hidden;
   }
   .qlink-chip-link{
-    padding:6px 10px;font-size:12px;font-weight:600;color:var(--navy);text-decoration:none;white-space:nowrap;
+    padding:3px 8px;font-size:11.5px;font-weight:600;color:var(--text-gray);text-decoration:none;white-space:nowrap;
+    border-radius:999px;
   }
-  .qlink-chip:hover{background:var(--hover-blue-soft);border-color:var(--navy);}
+  .qlink-chip:hover .qlink-chip-link{background:var(--sb-hover);color:var(--navy);}
   .qlink-chip-del{
     background:none;border:none;color:var(--text-light-gray);cursor:pointer;font-size:10px;
-    padding:6px 8px 6px 0;line-height:1;
+    padding:3px 6px 3px 0;line-height:1;
   }
   .qlink-chip-del:hover{color:var(--danger);}
   .qlink-chip-add{
-    background:none;border:1px dashed var(--card-border);border-radius:999px;color:var(--text-light-gray);
-    cursor:pointer;font-size:12px;padding:6px 10px;white-space:nowrap;
+    background:none;border:none;color:var(--text-light-gray);
+    cursor:pointer;font-size:11.5px;padding:3px 8px;white-space:nowrap;
   }
-  .qlink-chip-add:hover{border-color:var(--navy);color:var(--navy);}
-  @media (max-width:1100px){ .topbar-quicklinks{display:none;} }
+  .qlink-chip-add:hover{color:var(--navy);text-decoration:underline;}
   .search-results{
     position:absolute;top:calc(100% + 8px);right:0;width:340px;max-width:80vw;background:#fff;border:1px solid var(--card-border);
     border-radius:12px;box-shadow:0 14px 36px rgba(0,0,0,.14);z-index:120;display:none;overflow:hidden;max-height:420px;
@@ -440,11 +473,16 @@
   }
   .qlink-slot.empty:hover{border-color:var(--navy);color:var(--navy);background:var(--navy-soft);}
 
-  .top-actions{display:flex;align-items:center;gap:8px;flex:none;}
-  .sidebar-primary-group .nav-item{width:100%;text-align:left;font-family:inherit;}
+  .top-actions{display:flex;align-items:center;gap:6px;flex:none;}
+  .sidebar-primary-group .nav-item{
+    width:100%;text-align:left;font-family:inherit;
+    border:none;background:none;padding:9px 12px;border-radius:7px;font-size:14px;font-weight:700;
+  }
+  .sidebar-primary-group .nav-item:hover{background:var(--sb-hover);}
+  .sidebar-primary-group .nav-item.active{background:var(--sb-navy);color:#fff;}
   .top-icon-btn{
-    position:relative;width:42px;height:42px;flex:none;border-radius:10px;background:#fff;border:1px solid var(--card-border);
-    font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+    position:relative;width:32px;height:32px;flex:none;border-radius:8px;background:none;border:1px solid transparent;
+    font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
   }
   .top-icon-btn:hover{border-color:var(--accent);background:var(--hover-blue-soft);}
   .top-icon-btn .badge-dot{
@@ -630,47 +668,61 @@
   .pa-admin-row:last-child{border-bottom:none;}
   .pa-admin-actions{display:flex;gap:4px;flex-shrink:0;}
 
-  /* 오늘 업무 비서 (상태 요약 가로칸은 두지 않는다 — 각 업무 행 왼쪽 상태 태그로만 표시) */
-  .today-list{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+  /* 처리할 업무 비서 (상태 요약 가로칸은 두지 않는다 — 각 업무 행 왼쪽 상태 태그로만 표시) */
+  /* 목록형 컴팩트 1줄 행: 각 행을 카드로 감싸지 않고 얇은 구분선만 사용해 밀도를 높인다 */
+  .today-list{display:flex;flex-direction:column;margin-bottom:16px;}
   .today-card{
-    background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;
-    padding:16px 18px;cursor:pointer;
+    background:none;border:none;border-bottom:1px solid var(--card-border);border-radius:6px;
+    padding:8px 6px;cursor:pointer;
   }
-  .today-card:hover{border-color:var(--accent);}
-  .today-card.expanded{border-color:var(--accent);box-shadow:0 0 0 3px var(--hover-blue-soft);}
-  .today-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .today-list .today-card:last-child{border-bottom:none;}
+  .today-card:hover{background:var(--bg);}
+  .today-card.expanded{background:var(--hover-blue-soft);}
+  .today-card-top{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
   .today-card-del{
     margin-left:auto;flex:none;background:none;border:none;color:var(--text-light-gray);
     cursor:pointer;font-size:13px;padding:2px 6px;line-height:1;
   }
-  .today-card-del:hover{color:var(--danger);}
+  .today-card-del:hover{color:var(--text-gray);}
   .today-status-tag{
-    flex:none;font-size:11px;font-weight:800;padding:3px 9px;border-radius:6px;
+    flex:none;font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:5px;
     background:var(--navy-soft);color:var(--navy);letter-spacing:.02em;
   }
   .today-status-tag.st-urgent{background:#fde8e8;color:#b91c1c;}       /* 긴급 = 연한 빨강 */
   .today-status-tag.st-callback{background:#e3f7e8;color:#15803d;}    /* 콜백 = 연한 초록 */
   .today-status-tag.st-material{background:#ffedd5;color:#9a3412;}    /* 자료발송 = 연한 주황 */
   .today-status-tag.st-waiting{background:#ede9fe;color:#5b21b6;}     /* 대기 = 연한 보라 */
-  .today-card-title{font-size:15px;font-weight:700;color:var(--text-dark);}
-  .today-card-sub{font-size:13px;color:var(--text-gray);margin-top:4px;}
-  .today-detail{margin-top:14px;padding-top:14px;border-top:1px solid var(--card-border);}
+  .today-card-title{
+    font-size:13.5px;font-weight:600;color:var(--text-dark);flex:1;min-width:0;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .today-card-sub{
+    font-size:12px;color:var(--text-gray);margin-top:2px;padding-left:1px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .today-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--card-border);}
   .today-detail-row{margin-bottom:12px;}
   .today-detail-row:last-child{margin-bottom:0;}
   .today-detail-label{font-size:11px;font-weight:700;color:var(--text-gray);letter-spacing:.03em;margin-bottom:4px;}
   .today-detail-val{font-size:14px;color:var(--text-dark);line-height:1.6;white-space:pre-wrap;}
   .today-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
   .today-snooze-menu{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  /* 처리할 업무 상단 도구 버튼: 목록 제목보다 시각적으로 가벼운 보조/고스트 버튼 */
+  .today-toolbar-row{display:flex;gap:16px;margin-bottom:10px;}
+  .today-toolbar-btn{
+    background:none;border:none;padding:2px 0;font-size:12px;font-weight:600;color:var(--text-gray);cursor:pointer;
+  }
+  .today-toolbar-btn:hover{color:var(--accent-dark);text-decoration:underline;}
   .today-empty{color:var(--text-gray);font-size:14px;padding:24px 0;text-align:center;}
 
-  /* 홈: 전화 비서 + 오늘 업무 + 업무도구를 한 화면에 요약 */
+  /* 홈: 전화 비서 + 처리할 업무 + 업무도구를 한 화면에 요약 */
   .home-more-link{text-align:right;margin:6px 0 26px;}
   .link-btn{background:none;border:none;padding:0;font-size:12px;color:var(--text-gray);cursor:pointer;}
   .link-btn:hover{color:var(--accent-dark);text-decoration:underline;}
   .worktools-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
   .worktools-btn{
-    background:var(--card-bg);border:1px solid var(--card-border);border-radius:8px;
-    padding:10px 18px;font-size:13.5px;font-weight:700;color:var(--text-dark);cursor:pointer;
+    background:none;border:1px solid var(--card-border);border-radius:7px;
+    padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text-dark);cursor:pointer;
   }
   .worktools-btn:hover{border-color:var(--accent);color:var(--accent-dark);}
   .worktools-btn.disabled, .worktools-btn:disabled{
@@ -680,7 +732,7 @@
   .worktools-btn.active{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
   .home-shortcuts-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
 
-  /* 사이드바: 상단 우선순위 그룹(홈/전화 비서/오늘 업무) + 하단 업무도구 그룹 */
+  /* 사이드바: 상단 우선순위 그룹(홈/전화 비서/처리할 업무) + 하단 업무도구 그룹 */
   .sidebar-primary-group{display:flex;flex-direction:column;gap:8px;margin-bottom:22px;}
   .sidebar-group-label{font-size:11px;font-weight:700;color:var(--sb-text-faint);letter-spacing:.06em;margin:0 2px 8px;}
   .sidebar-quicklinks{margin-top:16px;padding-top:16px;border-top:1px solid var(--sb-border);}
@@ -693,14 +745,11 @@
   .top-icon-btn:disabled:hover{border-color:var(--card-border);background:var(--bg);}
 
   @media (max-width:760px){
-    .sidebar{position:fixed;left:0;top:75px;bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
+    .sidebar{position:fixed;left:0;top:var(--topbar-h,128px);bottom:0;z-index:50;transform:translateX(-100%);transition:transform .2s;}
     .sidebar.open{transform:translateX(0);}
     .content{padding:20px;}
-    .topbar{padding:12px 16px;}
-    .topbar-inner{flex-wrap:wrap;gap:10px;}
-    .topbar-brand{order:1;}
-    .top-actions{order:2;}
-    .search-wrap{flex:1 1 100%;width:auto;order:3;}
+    .topbar{padding:10px 16px 8px;}
+    .search-wrap{max-width:none;}
     .search-results{left:0;right:0;width:auto;max-width:none;}
     .note-panel{width:100%;max-width:100%;}
   }
@@ -708,14 +757,20 @@
 </head>
 <body>
 <div class="topbar">
-  <div class="topbar-inner">
+  <div class="topbar-row topbar-row-brand">
     <button type="button" class="topbar-brand" id="homeBrandLink">SHIN<span class="sep">/</span>업무비서</button>
+  </div>
+  <div class="topbar-row topbar-row-search">
+    <div class="search-wrap">
+      <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+  <div class="topbar-row topbar-row-links">
+    <div class="topbar-quicklinks" id="quickLinks"></div>
+  </div>
+  <div class="topbar-row topbar-row-actions">
     <div class="top-actions">
-      <div class="search-wrap">
-        <input type="text" id="globalSearch" class="search-box" placeholder="🔍 업체·아파트·키워드 검색" autocomplete="off" />
-        <div class="search-results" id="searchResults"></div>
-      </div>
-      <div class="topbar-quicklinks" id="quickLinks"></div>
       <button class="top-icon-btn" id="noteBtn" title="오늘 할 일">📝<span class="badge-dot" id="todoBadge">0</span></button>
       <button class="top-icon-btn" id="notifBtn" title="알림 (미연결 — 연결된 기존 기능 없음)" disabled>🔔</button>
       <button class="top-icon-btn" id="userBtn" title="사용자 (미연결 — 연결된 기존 기능 없음)" disabled>👤</button>
@@ -746,11 +801,17 @@
     <div class="sidebar-primary-group">
       <button type="button" class="nav-item" id="homeNavLink">홈</button>
       <button type="button" class="nav-item" id="phoneAssistantFooterLink">전화 비서</button>
-      <button type="button" class="nav-item" id="todayFooterLink">오늘 업무</button>
+      <button type="button" class="nav-item" id="todayFooterLink">처리할 업무</button>
     </div>
 
-    <div class="nav-section">
-      <div class="sidebar-group-label">업무 가이드</div>
+    <div class="nav-section collapsed" id="guideNavSection">
+      <div class="nav-section-head" id="guideNavToggle">
+        <span class="sidebar-group-label">업무 가이드</span>
+        <span class="nav-section-head-actions">
+          <button type="button" class="nav-edit-toggle" id="guideEditToggle" title="가이드 순서 편집">편집</button>
+          <span class="nav-section-chevron" id="guideNavChevron">˅</span>
+        </span>
+      </div>
       <ul class="nav-list" id="unifiedNavList"></ul>
       <button class="nav-add" id="addGuideBtn">+ 새 가이드 추가</button>
     </div>
@@ -929,7 +990,7 @@ const DEFAULT_STATE = {
   sites:[
     {id:uid(), name:'예시 아파트', region:'부산', memo:''}
   ],
-  // 오늘 업무 비서가 관리하는 업무 카드. 전화 비서 통화 종료 시 후속업무를 저장하면 여기에 자동으로 쌓인다.
+  // 처리할 업무 비서가 관리하는 업무 카드. 전화 비서 통화 종료 시 후속업무를 저장하면 여기에 자동으로 쌓인다.
   workItems:[],
   // 전화 비서에서 [저장]으로 확정한 통화 기록 (원문/정리본/후속업무 분리 보관)
   callLogs:[],
@@ -954,7 +1015,7 @@ function loadState(){
       if(!parsed.credentials) parsed.credentials = [];
       if(!parsed.companies) parsed.companies = [];
       if(!Array.isArray(parsed.navOrder)) parsed.navOrder = [];
-      // 전화 비서 / 오늘 업무 비서용 추가 데이터 (기존 사용자는 빈 배열로 채워짐 — 예시 데이터 주입 없음)
+      // 전화 비서 / 처리할 업무 비서용 추가 데이터 (기존 사용자는 빈 배열로 채워짐 — 예시 데이터 주입 없음)
       if(!Array.isArray(parsed.jurisdictions)) parsed.jurisdictions = [];
       if(!Array.isArray(parsed.materials)) parsed.materials = [];
       if(!Array.isArray(parsed.sites)) parsed.sites = [];
@@ -1326,19 +1387,31 @@ function getNavItems(){
   }).filter(Boolean);
 }
 
+// 사이드바 "업무 가이드" 목록 펼침/접힘 상태(기본은 접힘 — 첫 화면이 단순해 보이도록)와
+// 순서/삭제 편집 모드는 새 기능이 아니라 기존 드래그 정렬·수정·삭제 기능을 그대로 두고
+// 노출 여부만 토글하는 것이므로 작은 localStorage 플래그 하나로 충분하다.
+let guideNavExpanded = localStorage.getItem('shin-guideNavExpanded') === '1';
+let guideNavEditMode = false;
+
 function renderSidebar(){
   document.getElementById('brandTitle').textContent = state.brand.title;
 
   syncNavOrder();
   const items = getNavItems();
   const unifiedNavList = document.getElementById('unifiedNavList');
+  unifiedNavList.classList.toggle('edit-mode', guideNavEditMode);
   unifiedNavList.innerHTML = items.map((item, i) => `
-    <li class="nav-item ${item.active ? 'active' : ''}" draggable="true"
+    <li class="nav-item ${item.active ? 'active' : ''}" draggable="${guideNavEditMode ? 'true' : 'false'}"
       data-nav-id="${item.navId}" data-nav-index="${i}" data-kind="${item.kind}"
       ${item.kind === 'guide' ? `data-guide-id="${item.guideId}"` : ''}>
       <span class="label">${escapeHtml(item.label)}</span>
     </li>
   `).join('') || '<li class="nav-item" style="color:var(--sb-text-faint);cursor:default;">항목이 없습니다</li>';
+
+  document.getElementById('guideNavSection').classList.toggle('collapsed', !guideNavExpanded);
+  document.getElementById('guideNavChevron').textContent = guideNavExpanded ? '˄' : '˅';
+  document.getElementById('guideEditToggle').classList.toggle('active', guideNavEditMode);
+  document.getElementById('guideEditToggle').textContent = guideNavEditMode ? '완료' : '편집';
 
   document.getElementById('homeNavLink').classList.toggle('active', state.currentView.type === 'home');
   document.getElementById('companiesFooterLink').classList.toggle('active', state.currentView.type === 'companies');
@@ -1346,6 +1419,16 @@ function renderSidebar(){
   document.getElementById('todayFooterLink').classList.toggle('active', state.currentView.type === 'today');
   document.getElementById('materialsFooterLink').classList.toggle('active', state.currentView.type === 'materials');
 }
+document.getElementById('guideNavToggle').addEventListener('click', ()=>{
+  guideNavExpanded = !guideNavExpanded;
+  localStorage.setItem('shin-guideNavExpanded', guideNavExpanded ? '1' : '0');
+  renderSidebar();
+});
+document.getElementById('guideEditToggle').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  guideNavEditMode = !guideNavEditMode;
+  renderSidebar();
+});
 function goHome(){ state.currentView = {type:'home'}; saveState(); render(); }
 document.getElementById('homeNavLink').addEventListener('click', goHome);
 document.getElementById('homeBrandLink').addEventListener('click', goHome);
@@ -1964,10 +2047,10 @@ contentEl.addEventListener('click', (e)=>{
   else if(action === 'company-delete'){
     const c = state.companies.find(c=>c.id===btn.dataset.id);
     if(!c) return;
-    // 연결된 오늘 업무/통화 기록이 있으면 그 기록은 그대로 두고 업체 정보만 삭제한다는 것을 미리 알린다(연쇄 삭제 금지)
+    // 연결된 처리할 업무/통화 기록이 있으면 그 기록은 그대로 두고 업체 정보만 삭제한다는 것을 미리 알린다(연쇄 삭제 금지)
     const hasLinked = state.workItems.some(w=>w.companyId===c.id) || state.callLogs.some(l=>l.companyId===c.id);
     const msg = hasLinked
-      ? `"${c.name}" 업체를 삭제하시겠습니까?\n이 업체에 연결된 오늘 업무/통화 기록이 있습니다. 해당 기록은 삭제하지 않고 업체정보만 삭제합니다.`
+      ? `"${c.name}" 업체를 삭제하시겠습니까?\n이 업체에 연결된 처리할 업무/통화 기록이 있습니다. 해당 기록은 삭제하지 않고 업체정보만 삭제합니다.`
       : `"${c.name}" 업체를 삭제하시겠습니까?`;
     if(confirm(msg)){
       state.companies = state.companies.filter(x=>x.id!==c.id);
@@ -1979,7 +2062,7 @@ contentEl.addEventListener('click', (e)=>{
     pendingOcrData = {}; // 수동 등록은 이전에 첨부해두고 취소했던 OCR 결과를 이어받지 않음
     openAddCompanyModal(companySearchQuery);
   }
-  // 홈 화면: 전화 비서/오늘 업무 "전체 화면 열기" 링크 (기존 화면 전환 로직 재사용)
+  // 홈 화면: 전화 비서/처리할 업무 "전체 화면 열기" 링크 (기존 화면 전환 로직 재사용)
   else if(action === 'home-open-phone'){
     state.currentView = {type:'phoneAssistant'};
     saveState(); render();
@@ -2695,7 +2778,7 @@ function detectCompany(line){
 }
 
 // 인식된 의도(tag) 목록으로 "지금 말할 내용"을 찾는다. 자주 쓰는 멘트 → 업무 가이드의 메모 순으로 우선 참고한다.
-// (오늘 업무 비서의 "전화할 때" 항목도 이 함수를 그대로 재사용한다.)
+// (처리할 업무 비서의 "전화할 때" 항목도 이 함수를 그대로 재사용한다.)
 function findScriptForTags(tags){
   for(const tag of [...tags].reverse()){
     const phraseHit = state.phrases.find(p => textIncludesAny(`${p.title} ${p.body}`, [tag]));
@@ -3493,7 +3576,7 @@ function renderHomeView(){
       <h1 style="font-size:20px;">처리할 업무 ${todayCount}건</h1>
     </div>
     ${renderTodayList()}
-    <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-today">오늘 업무 전체 보기 · 직접 추가 →</button></div>
+    <div class="home-more-link"><button type="button" class="link-btn" data-action="home-open-today">처리할 업무 전체 보기 · 직접 추가 →</button></div>
 
     <div class="view-header" style="margin:8px 0 10px;">
       <h1 style="font-size:13px;color:var(--text-gray);letter-spacing:.05em;">업무도구</h1>
@@ -3591,7 +3674,7 @@ function renderPhoneCallEndedCore(s){
         <div class="pa-followup-item">
           <input type="text" class="pa-followup-input" data-pa-followup-index="${i}" value="${escapeHtml(f.text)}" />
           <span class="pa-followup-actions">
-            <button class="copy-btn" data-pa-action="add-todo" data-index="${i}">+ 오늘 업무에 추가</button>
+            <button class="copy-btn" data-pa-action="add-todo" data-index="${i}">+ 처리할 업무에 추가</button>
             <button class="icon-btn danger" data-pa-action="followup-delete" data-index="${i}" title="삭제">🗑</button>
           </span>
         </div>
@@ -3930,7 +4013,7 @@ contentEl.addEventListener('click', (e)=>{
     if(!f) return;
     const who = phoneSession.company ? phoneSession.company.name : phoneSession.site ? phoneSession.site.name : (phoneSession.firstLine || '');
     state.todos.push({id:uid(), text: who ? `${who} — ${f.text}` : f.text, done:false});
-    // 오늘 업무 비서와 연결: 같은 업체/현장 ID를 참조하는 업무 카드로도 함께 등록한다 (요청에 따라 자동 등록, 삭제되지 않음)
+    // 처리할 업무 비서와 연결: 같은 업체/현장 ID를 참조하는 업무 카드로도 함께 등록한다 (요청에 따라 자동 등록, 삭제되지 않음)
     state.workItems.push({
       id:uid(),
       companyId: phoneSession.company ? phoneSession.company.id : null,
@@ -3946,7 +4029,7 @@ contentEl.addEventListener('click', (e)=>{
       snoozedUntil:null
     });
     saveState(); render();
-    showToast('오늘 할 일 · 오늘 업무에 추가되었습니다');
+    showToast('오늘 할 일 · 처리할 업무에 추가되었습니다');
   } else if(action === 'jur-add'){ openPhoneJurisdictionModal(); }
   else if(action === 'jur-edit'){ openPhoneJurisdictionModal(btn.dataset.id); }
   else if(action === 'jur-delete'){
@@ -3971,7 +4054,7 @@ contentEl.addEventListener('click', (e)=>{
 });
 
 /* ==========================================================================
-   오늘 업무 비서
+   처리할 업무 비서
    - "할 일"이 아니라 실제 기록(전화 비서 후속업무, 직접 등록)만 업무 카드로 만든다.
    - 완료되지 않았고(snoozedUntil이 지났거나 없는) 카드만 오늘 목록에 뜬다.
    - AI는 문장 정리에만 쓰고, 담당자/전화번호/자료위치/진행상태는 항상 state에서만 가져온다.
@@ -4012,7 +4095,7 @@ function workItemJurisdiction(w){
 
 let expandedWorkItemId = null;
 
-// 업무 목록 자체(한 줄 행 + 클릭 시 펼쳐지는 상세) — 홈 화면과 오늘 업무 전체 화면이 동일하게 재사용한다.
+// 업무 목록 자체(한 줄 행 + 클릭 시 펼쳐지는 상세) — 홈 화면과 처리할 업무 전체 화면이 동일하게 재사용한다.
 // 상태 요약 가로칸(긴급1·자료발송2 …)은 두지 않는다 — 각 행 왼쪽 상태 태그로만 표시한다.
 function renderTodayList(){
   const items = sortWorkItems(activeWorkItems());
@@ -4023,7 +4106,7 @@ function renderTodayList(){
   `;
 }
 
-// 오늘 업무 전체 화면(사이드바 "오늘 업무") — 목록 + 직접 추가/정리 보기 도구를 함께 보여준다.
+// 처리할 업무 전체 화면(사이드바 "처리할 업무") — 목록 + 직접 추가/정리 보기 도구를 함께 보여준다.
 function renderTodayView(){
   const items = activeWorkItems();
   return `
@@ -4032,9 +4115,9 @@ function renderTodayView(){
       <h1>처리할 업무 ${items.length}건</h1>
       <p>전화 비서 후속업무와 직접 등록한 업무를 모아 우선순위대로 보여드립니다.</p>
     </div>
-    <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
-      <button type="button" class="copy-btn" data-tw-action="add-open">+ 업무 직접 추가</button>
-      <button type="button" class="copy-btn" data-tw-action="show-summary">오늘 업무 정리 보기</button>
+    <div class="today-toolbar-row">
+      <button type="button" class="today-toolbar-btn" data-tw-action="add-open">+ 업무 직접 추가</button>
+      <button type="button" class="today-toolbar-btn" data-tw-action="show-summary">정리 보기</button>
     </div>
     <div id="todaySummaryArea"></div>
     ${renderTodayList()}
@@ -4050,10 +4133,10 @@ function renderTodayCard(w){
     <div class="today-card ${expanded?'expanded':''}" data-tw-action="toggle" data-id="${w.id}">
       <div class="today-card-top">
         <span class="today-status-tag ${meta.tagClass}">${escapeHtml(meta.label)}</span>
-        <span class="today-card-title">${who ? escapeHtml(who) + ' — ' : ''}${escapeHtml(w.title)}</span>
+        <span class="today-card-title">${who ? escapeHtml(who) + ' · ' : ''}${escapeHtml(w.title)}</span>
         <button type="button" class="today-card-del" data-tw-action="work-delete" data-id="${w.id}" title="이 업무 삭제">✕</button>
       </div>
-      ${w.nextAction ? `<div class="today-card-sub">→ ${escapeHtml(w.nextAction)}</div>` : ''}
+      ${w.nextAction ? `<div class="today-card-sub">${escapeHtml(w.nextAction)}</div>` : ''}
       ${expanded ? renderTodayDetail(w, meta, company, site) : ''}
     </div>
   `;
@@ -4203,7 +4286,7 @@ contentEl.addEventListener('click', (e)=>{
     area.innerHTML = `
       <div class="card">
         <div class="card-head">
-          <div class="card-title" style="margin:0;">오늘 업무 정리</div>
+          <div class="card-title" style="margin:0;">처리할 업무 정리</div>
           <div class="card-actions">
             <button class="copy-btn" data-tw-action="copy-daily-summary">📋 복사</button>
             <button class="icon-btn" data-tw-action="ai-daily-summary" title="보고용 문구 만들기">✨</button>
