@@ -668,6 +668,43 @@
   .pa-admin-row:last-child{border-bottom:none;}
   .pa-admin-actions{display:flex;gap:4px;flex-shrink:0;}
 
+  /* 전화 비서 재설계: 검색 전 빠른 유형 선택 칩 */
+  .pa-quick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .pa-quick-chip{
+    font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:999px;
+    border:1px solid var(--card-border);background:var(--bg);color:var(--text-gray);
+    cursor:pointer;font-family:inherit;
+  }
+  .pa-quick-chip:hover{border-color:var(--accent);color:var(--accent-dark);background:var(--hover-blue-soft);}
+
+  /* 전화 비서 재설계: 진행 표시 + 좌(본문)/우(통화 메모) 레이아웃 */
+  .pa-progress{font-size:11.5px;font-weight:700;color:var(--text-gray);margin-top:10px;letter-spacing:.02em;}
+  .pa-call-layout{display:flex;gap:16px;align-items:flex-start;}
+  .pa-call-main{flex:1;min-width:0;}
+  .pa-call-side{flex:0 0 260px;}
+  .pa-call-side .card{margin-bottom:0;}
+  @media (max-width:980px){
+    .pa-call-layout{flex-direction:column;}
+    .pa-call-side{flex:none;width:100%;}
+  }
+
+  /* 전화 비서 재설계: 질문 하나에 집중 — 안내 문구는 질문/답변과 한 덩어리로 묶어 보여준다 */
+  .pa-qa-focus-guide{margin-top:14px;padding-top:12px;border-top:1px dashed var(--card-border);}
+  .pa-qa-focus-guide-label{font-size:10.5px;font-weight:700;color:var(--text-light-gray);letter-spacing:.04em;margin-bottom:4px;}
+  .pa-qa-focus-guide-text{font-size:12.5px;color:var(--text-gray);line-height:1.6;}
+  .pa-qa-links{display:flex;gap:14px;margin:10px 0 4px;}
+
+  /* 전화 비서 재설계: 진행순서 / 담당자를 통화 중에는 접어서 최소한만 보여준다 */
+  .pa-collapse-toggle{
+    display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:none;border:none;
+    padding:8px 0;font-size:12.5px;font-weight:700;color:var(--text-gray);cursor:pointer;font-family:inherit;
+  }
+  .pa-collapse-toggle:hover{color:var(--accent-dark);}
+  .pa-contact-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text-dark);padding:8px 0;}
+  .pa-contact-line strong{font-weight:700;}
+  .pa-collapse{margin-bottom:6px;}
+  .pa-qa-overview-card{padding-top:10px;}
+
   /* 처리할 업무 비서 (상태 요약 가로칸은 두지 않는다 — 각 업무 행 왼쪽 상태 태그로만 표시) */
   /* 목록형 컴팩트 1줄 행: 각 행을 카드로 감싸지 않고 얇은 구분선만 사용해 밀도를 높인다 */
   .today-list{display:flex;flex-direction:column;margin-bottom:16px;}
@@ -2747,7 +2784,7 @@ async function runAiRewrite(apiKey, text){
 const PHONE_INTENT_GROUPS = [
   { tag:'체결',      keywords:['체결','협약','mou','MOU','제휴','업무협약','협약문의'] },
   { tag:'시방서',    keywords:['시방서','시방','시방서 요청','시방서요청'] },
-  { tag:'공법설명회', keywords:['공법설명회','설명회','공법 설명','공법설명','pt','PT','공법설명회 일정','pt 일정'] },
+  { tag:'공법설명회', keywords:['공법설명회','설명회','공법 설명','공법설명','공법문의','공법 문의','pt','PT','공법설명회 일정','pt 일정'] },
   { tag:'자료요청',  keywords:['자료','자료달라','자료줘','자료요청','보내달라','발송해'] },
   { tag:'담당자',    keywords:['담당자','담당','지사','연락처','전화번호','누가'] },
   { tag:'견적',      keywords:['견적','견적문의','견적 요청','견적요청','공사 견적','공사견적','비용','가격'] },
@@ -2759,6 +2796,9 @@ const PHONE_INTENT_GROUPS = [
 const PHONE_REGION_LIST = ['서울','부산','대구','인천','광주','대전','울산','세종','경기','강원','충북','충남','전북','전남','경북','경남','제주'];
 // 자료 요청으로 볼 수 있는 의도 — 이 태그가 인식됐는데 등록된 자료가 없으면 "확인 필요"로 명시한다
 const MATERIAL_REQUEST_TAGS = ['시방서','자료요청','질문서','특허'];
+// 검색 전 화면의 빠른 유형 선택 칩. 클릭하면 이 문구를 입력한 것과 똑같이 통화 시작(addPhoneNote) 흐름을 그대로 탄다 —
+// 새 인식 로직이 아니라 기존 PHONE_INTENT_GROUPS 키워드 인식에 그대로 올라타는 지름길일 뿐이다.
+const PHONE_QUICK_TYPES = ['견적문의','협약문의','자료요청','공법문의','PT요청','자재발주','공사진행','기타'];
 
 function textIncludesAny(text, keywords){
   const t = String(text||'').toLowerCase().replace(/\s+/g,'');
@@ -2802,6 +2842,7 @@ function newPhoneSession(){
     endedAt:null, report:null, followups:[],
     extractedFields:{}, finalFields:{}, relayText:'', // 통화완료 시 채워지는 구조화 결과(원본 추출값/사용자 최종수정값 분리 보관)
     qaEditMode:false, procEditMode:false,
+    qaOverviewOpen:false, procOpen:false, // 통화 중 화면: 전체 질문 목록/진행순서는 기본 접힘 (한 번에 하나씩 보여주기 위함)
     lastScript:null, lastMaterial:null, lastJurisdiction:null, lastScriptBlocks:[]
   };
 }
@@ -3311,15 +3352,19 @@ function renderPhoneAssistantCore(){
   const s = phoneSession;
   if(s.endedAt) return renderPhoneCallEndedCore(s);
 
-  // §3 검색 전: 아무것도 입력되지 않았으면 "전화비서" 입력창만 보여준다(대본/질문/진행순서/담당자/자료/통화완료 전부 숨김)
+  // §1 검색 전: 전화가 오면 들은 내용을 짧게 입력하는 한 줄 입력창 + 빠른 유형 선택 칩만 보여준다
+  // (대본/질문/진행순서/담당자/자료/통화완료는 전부 숨김 — "통화 시작" 전까지는 최대한 미니멀하게)
   const preSearch = !s.notes.length && !s.scenarioTag && !s.company && !s.site && !s.region;
   if(preSearch){
     return `
       <div class="card pa-callbar">
         <form class="inline-form" data-pa-form="add-note">
-          <input type="text" id="paInput" placeholder="업체명 / 아파트명 / 문의내용을 입력하세요 (예: 부산 덕천주공1단지, 시방서, 체결 문의)" autocomplete="off" />
-          <button type="submit">검색 / 시작</button>
+          <input type="text" id="paInput" placeholder="전화가 오면 들은 내용을 짧게 입력하세요 (예: 견적 문의인데 ○○아파트 관리소장님)" autocomplete="off" />
+          <button type="submit">통화 시작 →</button>
         </form>
+        <div class="pa-quick-chips">
+          ${PHONE_QUICK_TYPES.map(t => `<button type="button" class="pa-quick-chip" data-pa-action="quick-select" data-text="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('')}
+        </div>
       </div>
     `;
   }
@@ -3349,12 +3394,179 @@ function renderPhoneAssistantCore(){
 
   const nothingYet = !hasQaScenario && !script && !procedure && !material && !wantsMaterial && !s.region && !s.company && !s.site;
 
-  return `
-    <!-- ① 현재 통화 / 문의유형 -->
+  // §11 우선순위: 지금 말할 질문(집중) > 답변 입력 > 다음 질문 > 통화 메모(측면, 항상 작게) > 담당자(작게) > 진행순서(접힘)
+  // 질문형 시나리오가 인식된 경우, 전체를 한 번에 나열하지 않고 "지금 이 질문 하나"만 크게 보여준다.
+  if(hasQaScenario){
+    const total = s.qa.length;
+    const idx = Math.min(Math.max(s.currentQaIndex||0, 0), total-1);
+    const q = s.qa[idx];
+    s.currentQaIndex = idx;
+    const answeredCount = s.qa.filter(item => (item.answer||'').trim()).length;
+
+    const focusHtml = `
+      <div class="card pa-qa-focus">
+        <div class="pa-qa-focus-head">${String(idx+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}</div>
+        ${s.qaEditMode ? `
+          <input type="text" class="pa-qa-question-input" data-qa-id="${q.id}" placeholder="질문 문장 (예: 어느 아파트에서 전화주셨을까요?)" value="${escapeHtml(q.question)}" style="width:100%;box-sizing:border-box;margin-bottom:10px;" />
+          <input type="text" class="pa-qa-label-input" data-qa-id="${q.id}" placeholder="라벨 (진행순서용 짧은 이름)" value="${escapeHtml(q.label)}" style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:8px;border:1px solid var(--card-border);font-family:inherit;font-size:13px;margin-bottom:14px;" />
+          <div style="display:flex;gap:8px;">
+            <button type="button" class="icon-btn" data-pa-action="qa-up" data-id="${q.id}" title="위로">↑</button>
+            <button type="button" class="icon-btn" data-pa-action="qa-down" data-id="${q.id}" title="아래로">↓</button>
+            <button type="button" class="icon-btn danger" data-pa-action="qa-delete" data-id="${q.id}" title="이 질문 삭제">✕</button>
+          </div>
+        ` : `
+          <div class="pa-qa-focus-question">"${escapeHtml(q.question)}"</div>
+          <div class="pa-qa-focus-answer-label">답변</div>
+          <input type="text" class="pa-qa-answer pa-qa-focus-answer" data-qa-id="${q.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(q.answer)}" autocomplete="off" />
+          ${script ? `
+            <div class="pa-qa-focus-guide">
+              <div class="pa-qa-focus-guide-label">안내</div>
+              <div class="pa-qa-focus-guide-text">"${escapeHtml(script.body)}"</div>
+            </div>
+          ` : ''}
+          <div class="pa-qa-focus-actions">
+            ${idx>0 ? `<button type="button" class="btn btn-ghost" data-pa-action="qa-prev">← 이전</button>` : ''}
+            <button type="button" class="btn btn-primary" data-pa-action="qa-next">${idx<total-1 ? '다음 질문 →' : '마지막 질문'}</button>
+          </div>
+        `}
+      </div>
+      <div class="pa-qa-links">
+        <button type="button" class="link-btn" data-pa-action="qa-overview-toggle">${s.qaOverviewOpen ? '전체 질문 접기' : '전체 질문 보기'}</button>
+        <button type="button" class="link-btn" data-pa-action="qa-edit-toggle">${s.qaEditMode ? '편집 완료' : '질문 편집'}</button>
+      </div>
+      ${(s.qaOverviewOpen || s.qaEditMode) ? `
+        <div class="card pa-qa-overview-card">
+          ${s.qaEditMode ? `
+            ${s.qa.map((item,i) => `
+              <div class="pa-qa-ov-row ${i===idx?'current':''}" style="cursor:default;">
+                <span class="pa-qa-ov-mark">${String(i+1).padStart(2,'0')}</span>
+                <span class="pa-qa-ov-label">${escapeHtml(item.label || item.question || '(빈 질문)')}</span>
+                <button type="button" class="link-btn" data-pa-action="qa-jump" data-index="${i}">이동</button>
+              </div>
+            `).join('')}
+            <button type="button" class="pa-qa-add" data-pa-action="qa-add">+ 질문 추가</button>
+          ` : `
+            <div class="pa-qa-overview" style="margin-bottom:0;">
+              ${s.qa.map((item,i) => {
+                const answered = (item.answer||'').trim();
+                const cls = answered ? 'answered' : (i===idx ? 'current' : '');
+                const mark = answered ? '✓' : (i===idx ? '●' : '○');
+                return `
+                  <button type="button" class="pa-qa-ov-row ${cls}" data-pa-action="qa-jump" data-index="${i}">
+                    <span class="pa-qa-ov-mark">${mark}</span>
+                    <span class="pa-qa-ov-label">${escapeHtml(item.label || item.question || '질문')}</span>
+                    ${answered ? `<span class="pa-qa-ov-current-tag">${escapeHtml(item.answer)}</span>` : (i===idx ? `<span class="pa-qa-ov-current-tag">입력 중</span>` : '')}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          `}
+        </div>
+      ` : ''}
+    `;
+
+    const materialHtml = (material || wantsMaterial) ? `
+      <div class="pa-contact-line">
+        <span>📎</span>
+        ${material ? `<strong>${escapeHtml(material.name)}</strong><span>· ${escapeHtml(material.location)}</span><button type="button" class="link-btn" data-pa-action="copy-material">복사</button>`
+          : `<span class="pa-missing">등록된 자료 없음 — 확인 필요</span>`}
+      </div>
+    ` : '';
+
+    const jurisdictionHtml = s.region ? `
+      <div class="pa-contact-line">
+        <span>📍</span>
+        ${s.lastJurisdiction ? `
+          <strong>${escapeHtml(s.lastJurisdiction.manager||'담당자 미등록')}</strong>
+          <span>${s.lastJurisdiction.branch ? escapeHtml(s.lastJurisdiction.branch) + ' · ' : ''}${escapeHtml(s.lastJurisdiction.phone||'-')}</span>
+          ${s.lastJurisdiction.phone ? `<button type="button" class="link-btn" data-pa-action="copy-jurisdiction-phone">복사</button>` : ''}
+        ` : `<span class="pa-missing">등록된 담당자 정보 없음 (${escapeHtml(s.region)})</span>`}
+      </div>
+    ` : '';
+
+    const procHtml = `
+      <div class="pa-collapse">
+        <button type="button" class="pa-collapse-toggle" data-pa-action="proc-section-toggle">통화 후 처리 &nbsp;${s.procOpen ? '펼쳐보기 ▲' : '펼쳐보기 ▼'}</button>
+        ${s.procOpen ? `
+          <div class="card-head" style="margin-bottom:6px;">
+            <div></div>
+            <button type="button" class="copy-btn" data-pa-action="proc-edit-toggle">${s.procEditMode ? '편집 완료' : '진행순서 편집'}</button>
+          </div>
+          ${s.procEditMode ? `
+            ${procSteps.map((p,i) => `
+              <div class="pa-proc-edit-row">
+                <span class="pa-qa-block-num">${String(i+1).padStart(2,'0')}</span>
+                <input type="text" class="pa-proc-input" data-proc-id="${p.id}" value="${escapeHtml(p.text)}" style="flex:1;" />
+                <button type="button" class="icon-btn" data-pa-action="proc-up" data-id="${p.id}" title="위로">↑</button>
+                <button type="button" class="icon-btn" data-pa-action="proc-down" data-id="${p.id}" title="아래로">↓</button>
+                <button type="button" class="icon-btn danger" data-pa-action="proc-delete" data-id="${p.id}" title="삭제">✕</button>
+              </div>
+            `).join('') || '<div class="empty-state" style="padding:8px 0;">등록된 진행순서가 없습니다</div>'}
+            <button type="button" class="pa-qa-add" data-pa-action="proc-add">+ 항목 추가</button>
+          ` : `
+            <div class="steps-row" style="margin-bottom:0;">
+              ${procSteps.map((p,i) => `
+                ${i>0?'<span class="step-arrow">→</span>':''}
+                <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(p.text)}</span>
+              `).join('') || '<span class="empty-state" style="padding:0;">등록된 진행순서가 없습니다</span>'}
+            </div>
+          `}
+        ` : ''}
+      </div>
+    `;
+
+    const mainHtml = `
+      <div class="card pa-callbar">
+        <div class="pa-callbar-head">
+          <div>
+            <div class="pa-callbar-label">전화비서${typeLabel ? ' · ' + escapeHtml(typeLabel) : ''}</div>
+            <div class="pa-callbar-who">${counterpart}</div>
+          </div>
+        </div>
+        <div class="pa-progress">지금 확인할 내용 &nbsp;${answeredCount} / ${total}</div>
+        ${s.notes.length ? `
+          <div class="pa-notes-log">
+            <div class="pa-notes-log-label">검색 기록</div>
+            ${s.notes.map((n,i) => `
+              <div class="pa-note-line">
+                <span>· ${escapeHtml(n.text)}</span>
+                <button type="button" class="pa-note-del" data-pa-action="note-delete" data-index="${i}" title="이 기록 삭제">✕</button>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+      ${focusHtml}
+      ${materialHtml}
+      ${jurisdictionHtml}
+      ${procHtml}
+    `;
+
+    const sideHtml = `
+      <div class="card">
+        <div class="card-title" style="margin-bottom:8px;">📝 통화 메모</div>
+        <textarea id="paRawMemo" class="pa-rawmemo" placeholder="자유롭게 메모…">${escapeHtml(s.rawMemo)}</textarea>
+      </div>
+    `;
+
+    return `
+      <div class="pa-call-layout">
+        <div class="pa-call-main">${mainHtml}</div>
+        <div class="pa-call-side">${sideHtml}</div>
+      </div>
+      <div class="pa-endcall-row">
+        <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 완료 및 정리</button>
+      </div>
+    `;
+  }
+
+  // 업무 유형이 뚜렷하게 인식되지 않은 통화(질문 세트가 없는 경우) — 기존 대본/절차 정보를 그대로 보여주되
+  // 화면 비중은 최소화한다. 통화 메모는 마찬가지로 측면 패널로 보여준다.
+  const mainHtml = `
     <div class="card pa-callbar">
       <div class="pa-callbar-head">
         <div>
-          <div class="pa-callbar-label">현재 통화${typeLabel ? ' · ' + escapeHtml(typeLabel) : ''}</div>
+          <div class="pa-callbar-label">전화비서</div>
           <div class="pa-callbar-who">${counterpart}</div>
         </div>
       </div>
@@ -3375,12 +3587,11 @@ function renderPhoneAssistantCore(){
       ` : ''}
     </div>
 
-    <!-- ② 지금 말할 대본 -->
     ${scriptBlocks.length ? `
       <div class="card highlight">
         <div class="card-head">
-          <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용 (대본)</div>
-          <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 말할 문장 복사</button></div>
+          <div class="card-title" style="margin:0;">🗣️ 지금 말할 내용</div>
+          <div class="card-actions"><button class="copy-btn" data-pa-action="copy-script">📋 복사</button></div>
         </div>
         <div class="pa-script">
           ${scriptBlocks.map((b,i) => b.type === 'say' ? `
@@ -3399,101 +3610,36 @@ function renderPhoneAssistantCore(){
       </div>
     ` : ''}
 
-    <!-- ③ 질문 + 답변 입력 -->
-    ${hasQaScenario ? `
-      <div class="card highlight pa-qa-card">
-        <div class="card-head">
-          <div class="card-title" style="margin:0;">🗣️ ${escapeHtml(typeLabel)} 질문</div>
-          <button type="button" class="copy-btn" data-pa-action="qa-edit-toggle">${s.qaEditMode ? '편집 완료' : '질문 편집'}</button>
-        </div>
-        ${s.qa.map((q,i) => `
-          <div class="pa-qa-block">
-            <div class="pa-qa-block-row">
-              <span class="pa-qa-block-num">${String(i+1).padStart(2,'0')}</span>
-              ${s.qaEditMode ? `
-                <input type="text" class="pa-qa-label-input" data-qa-id="${q.id}" placeholder="라벨 (진행순서용 짧은 이름)" value="${escapeHtml(q.label)}" style="flex:1;" />
-                <button type="button" class="icon-btn" data-pa-action="qa-up" data-id="${q.id}" title="위로">↑</button>
-                <button type="button" class="icon-btn" data-pa-action="qa-down" data-id="${q.id}" title="아래로">↓</button>
-                <button type="button" class="icon-btn danger" data-pa-action="qa-delete" data-id="${q.id}" title="이 질문 삭제">✕</button>
-              ` : `<span class="pa-qa-block-label">${escapeHtml(q.label || q.question || '질문')}</span>`}
-            </div>
-            <div class="pa-qa-block-hint">지금 이렇게 말하세요</div>
-            ${s.qaEditMode ? `
-              <input type="text" class="pa-qa-question-input" data-qa-id="${q.id}" placeholder="질문 문장 (예: 어느 아파트에서 전화주셨을까요?)" value="${escapeHtml(q.question)}" />
-            ` : `<div class="pa-qa-block-question">"${escapeHtml(q.question)}"</div>`}
-            <div class="pa-qa-block-answer-label">답변</div>
-            <input type="text" class="pa-qa-answer" data-qa-id="${q.id}" placeholder="답변 입력 (짧은 단어만 입력해도 됩니다)" value="${escapeHtml(q.answer)}" autocomplete="off" />
+    ${procedure ? `
+      <div class="pa-collapse">
+        <button type="button" class="pa-collapse-toggle" data-pa-action="proc-section-toggle">통화 후 처리 — ${escapeHtml(procedure.title)} &nbsp;${s.procOpen ? '▲' : '▼'}</button>
+        ${s.procOpen ? `
+          <div class="steps-row" style="margin-bottom:0;">
+            ${procedure.steps.map((st,i) => `
+              ${i>0?'<span class="step-arrow">→</span>':''}
+              <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(st.label)}</span>
+            `).join('') || '<span class="empty-state" style="padding:0;">등록된 단계가 없습니다</span>'}
           </div>
-        `).join('')}
-        ${s.qaEditMode ? `<button type="button" class="pa-qa-add" data-pa-action="qa-add">+ 질문 추가</button>` : ''}
+        ` : ''}
       </div>
     ` : ''}
 
-    <!-- ④ 진행순서 -->
-    ${hasQaScenario ? `
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title" style="margin:0;">📋 진행순서 — ${escapeHtml(typeLabel)}</div>
-          <button type="button" class="copy-btn" data-pa-action="proc-edit-toggle">${s.procEditMode ? '편집 완료' : '편집'}</button>
-        </div>
-        ${s.procEditMode ? `
-          ${procSteps.map((p,i) => `
-            <div class="pa-proc-edit-row">
-              <span class="pa-qa-block-num">${String(i+1).padStart(2,'0')}</span>
-              <input type="text" class="pa-proc-input" data-proc-id="${p.id}" value="${escapeHtml(p.text)}" style="flex:1;" />
-              <button type="button" class="icon-btn" data-pa-action="proc-up" data-id="${p.id}" title="위로">↑</button>
-              <button type="button" class="icon-btn" data-pa-action="proc-down" data-id="${p.id}" title="아래로">↓</button>
-              <button type="button" class="icon-btn danger" data-pa-action="proc-delete" data-id="${p.id}" title="삭제">✕</button>
-            </div>
-          `).join('') || '<div class="empty-state" style="padding:8px 0;">등록된 진행순서가 없습니다</div>'}
-          <button type="button" class="pa-qa-add" data-pa-action="proc-add">+ 항목 추가</button>
-        ` : `
-          <div class="steps-row" style="margin-bottom:0;">
-            ${procSteps.map((p,i) => `
-              ${i>0?'<span class="step-arrow">→</span>':''}
-              <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(p.text)}</span>
-            `).join('') || '<span class="empty-state" style="padding:0;">등록된 진행순서가 없습니다</span>'}
-          </div>
-        `}
-      </div>
-    ` : (procedure ? `
-      <div class="card">
-        <div class="card-title">📋 지금 해야 할 업무 순서 — ${escapeHtml(procedure.title)}</div>
-        <div class="steps-row" style="margin-bottom:0;">
-          ${procedure.steps.map((st,i) => `
-            ${i>0?'<span class="step-arrow">→</span>':''}
-            <span class="step-chip"><span class="step-num">${String(i+1).padStart(2,'0')}</span>${escapeHtml(st.label)}</span>
-          `).join('') || '<span class="empty-state" style="padding:0;">등록된 단계가 없습니다</span>'}
-        </div>
-      </div>
-    ` : '')}
-
-    <!-- ⑤ 담당자 / 자료 / 참고정보 -->
-    ${material || wantsMaterial ? `
-      <div class="card">
-        <div class="card-title">📎 관련 자료</div>
-        ${material ? `
-          <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
-            <div class="company-info-item"><span class="company-info-label">자료명</span><span class="company-info-val">${escapeHtml(material.name)}</span></div>
-            <div class="company-info-item company-info-wide"><span class="company-info-label">자료 위치</span><span class="company-info-val">${escapeHtml(material.location)}</span></div>
-          </div>
-          <button class="copy-btn" style="margin-top:10px;" data-pa-action="copy-material">📋 위치 복사</button>
-        ` : `<div class="pa-missing">등록된 자료 없음 — 확인 필요</div>`}
+    ${(material || wantsMaterial) ? `
+      <div class="pa-contact-line">
+        <span>📎</span>
+        ${material ? `<strong>${escapeHtml(material.name)}</strong><span>· ${escapeHtml(material.location)}</span><button type="button" class="link-btn" data-pa-action="copy-material">복사</button>`
+          : `<span class="pa-missing">등록된 자료 없음 — 확인 필요</span>`}
       </div>
     ` : ''}
 
     ${s.region ? `
-      <div class="card">
-        <div class="card-title">📍 관할 담당자</div>
+      <div class="pa-contact-line">
+        <span>📍</span>
         ${s.lastJurisdiction ? `
-          <div class="company-info-grid" style="border:none;padding:0;margin-bottom:0;">
-            <div class="company-info-item"><span class="company-info-label">관할 지역</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.region)}</span></div>
-            <div class="company-info-item"><span class="company-info-label">지사</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.branch||'-')}</span></div>
-            <div class="company-info-item"><span class="company-info-label">담당자</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.manager||'-')}</span></div>
-            <div class="company-info-item"><span class="company-info-label">연락처</span><span class="company-info-val">${escapeHtml(s.lastJurisdiction.phone||'-')}</span></div>
-          </div>
-          ${s.lastJurisdiction.phone ? `<button class="copy-btn" style="margin-top:10px;" data-pa-action="copy-jurisdiction-phone">📋 번호 복사</button>` : ''}
-        ` : `<div class="pa-missing">등록된 담당자 정보 없음</div>`}
+          <strong>${escapeHtml(s.lastJurisdiction.manager||'담당자 미등록')}</strong>
+          <span>${s.lastJurisdiction.branch ? escapeHtml(s.lastJurisdiction.branch) + ' · ' : ''}${escapeHtml(s.lastJurisdiction.phone||'-')}</span>
+          ${s.lastJurisdiction.phone ? `<button type="button" class="link-btn" data-pa-action="copy-jurisdiction-phone">복사</button>` : ''}
+        ` : `<span class="pa-missing">등록된 담당자 정보 없음 (${escapeHtml(s.region)})</span>`}
       </div>
     ` : ''}
 
@@ -3525,15 +3671,22 @@ function renderPhoneAssistantCore(){
     ` : ''}
 
     ${nothingYet ? `<div class="empty-state">입력한 내용과 일치하는 저장된 정보가 아직 없습니다. 단어를 더 입력해보세요.</div>` : ''}
+  `;
 
-    ${hasQaScenario ? '' : `
-      <div class="card">
-        <div class="card-title">📝 통화 메모</div>
-        <textarea id="paRawMemo" class="pa-rawmemo" placeholder="전화하면서 메모를 계속 입력하세요…">${escapeHtml(s.rawMemo)}</textarea>
-      </div>
-    `}
+  const sideHtml = `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px;">📝 통화 메모</div>
+      <textarea id="paRawMemo" class="pa-rawmemo" placeholder="전화하면서 메모를 계속 입력하세요…">${escapeHtml(s.rawMemo)}</textarea>
+    </div>
+  `;
+
+  return `
+    <div class="pa-call-layout">
+      <div class="pa-call-main">${mainHtml}</div>
+      <div class="pa-call-side">${sideHtml}</div>
+    </div>
     <div class="pa-endcall-row">
-      <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 완료</button>
+      <button type="button" class="btn btn-primary" data-pa-action="end-call">통화 완료 및 정리</button>
     </div>
   `;
 }
@@ -3631,8 +3784,7 @@ function renderPhoneCallEndedCore(s){
   return `
     ${hasFields ? `
       <div class="card highlight">
-        <div class="card-title" style="margin-bottom:12px;">📝 통화 접수 정리</div>
-        <div class="pa-field-row"><span class="pa-field-label">문의유형</span><span class="pa-field-val">${escapeHtml(BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag)}</span></div>
+        <div class="card-title" style="margin-bottom:12px;">📝 통화 접수 정리 — ${escapeHtml(BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag)}</div>
         ${phoneFieldSchemaFor(s.scenarioTag).map(f => {
           const v = s.finalFields[f.key] || '';
           if(!v && !f.core) return '';
@@ -3643,15 +3795,22 @@ function renderPhoneCallEndedCore(s){
           </div>`;
         }).join('')}
       </div>
+      ${(s.rawMemo||'').trim() ? `
+        <div class="card">
+          <div class="card-title" style="margin-bottom:8px;">추가 메모</div>
+          <div class="pa-note-line" style="white-space:pre-wrap;">${escapeHtml(s.rawMemo)}</div>
+        </div>
+      ` : ''}
       <div class="card">
         <div class="card-title" style="margin-bottom:10px;">💬 전달용 문구</div>
         <textarea id="paRelayText" class="pa-rawmemo" style="min-height:140px;">${escapeHtml(s.relayText || '')}</textarea>
       </div>
       <div class="pa-endcall-row" style="flex-wrap:wrap;">
-        <button type="button" class="btn btn-ghost" data-pa-action="copy-all">전체 복사</button>
-        <button type="button" class="btn btn-ghost" data-pa-action="relay-copy">전달문구 복사</button>
-        <button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="relay-copy">문구 복사</button>
         <button type="button" class="btn btn-ghost" data-pa-action="call-edit-again">수정</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="add-work-item-from-call">처리할 업무에 추가</button>
+        <button type="button" class="btn btn-ghost" data-pa-action="copy-all">전체 복사</button>
+        <button type="button" class="btn btn-primary" data-pa-action="save-call">저장</button>
       </div>
     ` : `
       <div class="card highlight">
@@ -3796,17 +3955,21 @@ function openPhoneSiteModal(id){
   });
 }
 
+// §1 빠른 유형 선택 칩과 직접 입력 제출이 똑같은 흐름(addPhoneNote → 인식 → 렌더)을 타도록 공유한다
+function submitPhoneNoteText(text){
+  if(!String(text||'').trim()) return;
+  addPhoneNote(text);
+  render();
+  requestAnimationFrame(()=>{ const el = document.getElementById('paInput'); if(el) el.focus(); });
+}
 contentEl.addEventListener('submit', (e)=>{
   const form = e.target.closest('[data-pa-form="add-note"]');
   if(!form) return;
   e.preventDefault();
   const input = form.querySelector('#paInput');
   const text = input.value;
-  if(!text.trim()) return;
-  addPhoneNote(text);
   input.value = '';
-  render();
-  requestAnimationFrame(()=>{ const el = document.getElementById('paInput'); if(el) el.focus(); });
+  submitPhoneNoteText(text);
 });
 
 // ChatGPT처럼: AI 문구수정 입력창에서 Enter = 즉시 실행, Shift+Enter = 줄바꿈
@@ -3835,7 +3998,16 @@ contentEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('[data-pa-action]');
   if(!btn) return;
   const action = btn.dataset.paAction;
-  if(action === 'end-call'){
+  if(action === 'quick-select'){
+    // §1 빠른 유형 선택 칩: 그 문구를 직접 입력하고 제출한 것과 완전히 동일한 흐름(기존 통화 시작 로직)을 그대로 탄다
+    submitPhoneNoteText(btn.dataset.text || '');
+  } else if(action === 'qa-overview-toggle'){
+    phoneSession.qaOverviewOpen = !phoneSession.qaOverviewOpen;
+    render();
+  } else if(action === 'proc-section-toggle'){
+    phoneSession.procOpen = !phoneSession.procOpen;
+    render();
+  } else if(action === 'end-call'){
     const hasQaAnswer = !!(phoneSession && (phoneSession.qa||[]).some(q => (q.answer||'').trim()));
     if(!phoneSession || (!phoneSession.notes.length && !(phoneSession.rawMemo||'').trim() && !hasQaAnswer)){
       showToast('입력된 내용이 없습니다'); return;
@@ -4030,6 +4202,30 @@ contentEl.addEventListener('click', (e)=>{
     });
     saveState(); render();
     showToast('오늘 할 일 · 처리할 업무에 추가되었습니다');
+  } else if(action === 'add-work-item-from-call'){
+    // §9 [처리할 업무에 추가]: 구조화 결과가 있는 통화(문의유형 인식됨)에서, 기존 add-todo와 같은 workItems 데이터
+    // 구조를 그대로 재사용해 업무 카드를 만든다. 새 데이터 형태를 발명하지 않는다.
+    const s = phoneSession;
+    if(!s) return;
+    const who = s.company ? s.company.name : s.site ? s.site.name : (s.firstLine || '');
+    const typeLabel = BUSINESS_TYPE_LABEL[s.scenarioTag] || s.scenarioTag || '전화 문의';
+    const title = (s.relayText || '').split('\n').map(l=>l.trim()).find(Boolean) || `${who ? who + ' ' : ''}${typeLabel}`.trim();
+    state.workItems.push({
+      id: uid(),
+      companyId: s.company ? s.company.id : null,
+      siteId: s.site ? s.site.id : null,
+      who,
+      title,
+      status: 'unhandled',
+      reason: `전화 접수 "${typeLabel}" 에서 확인됨`,
+      nextAction: title,
+      materialId: null,
+      createdAt: Date.now(),
+      done:false,
+      snoozedUntil:null
+    });
+    saveState(); render();
+    showToast('처리할 업무에 추가되었습니다');
   } else if(action === 'jur-add'){ openPhoneJurisdictionModal(); }
   else if(action === 'jur-edit'){ openPhoneJurisdictionModal(btn.dataset.id); }
   else if(action === 'jur-delete'){
