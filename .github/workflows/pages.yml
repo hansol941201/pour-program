@@ -1,0 +1,43 @@
+name: Deploy to GitHub Pages
+
+# 이 저장소(pour-program) 전용 GitHub Pages 배포 워크플로. docs/ 폴더를 이 저장소
+# 자신의 Pages 환경에만 배포한다 — actions/deploy-pages는 그 워크플로가 실행되는
+# 저장소(context.repo)의 Pages에만 게시할 수 있으므로, 다른 저장소(shin 등)의 Pages를
+# 덮어쓸 수 없다(§ 저장소 분리로 얻는 구조적 안전성).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
